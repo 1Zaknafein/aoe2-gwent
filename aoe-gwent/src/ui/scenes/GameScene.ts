@@ -22,10 +22,13 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.interactive = true;
 
 		this._blackBackground = new PixiGraphics();
+		this._blackBackground.label = "black_background";
 		this._blackBackground.rect(0, 0, 1, 1).fill(0x000000);
 		this.addChild(this._blackBackground);
 
 		this._gameBoard = PixiSprite.from("background");
+
+		this._gameBoard.label = "game_board";
 
 		this._originalBoardWidth = this._gameBoard.width;
 		this._originalBoardHeight = this._gameBoard.height;
@@ -43,65 +46,56 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	private createCardContainers(): void {
 		const boardWidth = this._gameBoard.width;
 		const boardHeight = this._gameBoard.height;
+		const gameAreaCenterX = boardWidth / 2 + 110;
 
-		// Position player hand container (bottom)
-		this._cardContainers.player.hand.x = boardWidth / 2 - 300;
-		this._cardContainers.player.hand.y = boardHeight - 80;
-		this._gameBoard.addChild(this._cardContainers.player.hand);
+		const { player, enemy, weather } = this._cardContainers;
 
-		// Position enemy hand container (top)
-		this._cardContainers.enemy.hand.x = boardWidth / 2 - 300;
-		this._cardContainers.enemy.hand.y = 20;
-		this._gameBoard.addChild(this._cardContainers.enemy.hand);
+		[
+			player.infantry,
+			player.ranged,
+			player.siege,
+			enemy.infantry,
+			enemy.ranged,
+			enemy.siege,
+		].forEach((row) => row.scale.set(0.67));
 
-		// Position player playable rows (bottom half)
-		this._cardContainers.player.infantry.x = boardWidth / 2 - 250;
-		this._cardContainers.player.infantry.y = boardHeight * 0.7;
-		this._gameBoard.addChild(this._cardContainers.player.infantry);
+		[player.deck, enemy.deck].forEach((deck) => deck.scale.set(0.95));
+		[player.hand, enemy.hand].forEach((hand) => hand.scale.set(0.8));
 
-		this._cardContainers.player.ranged.x = boardWidth / 2 - 250;
-		this._cardContainers.player.ranged.y = boardHeight * 0.6;
-		this._gameBoard.addChild(this._cardContainers.player.ranged);
+		weather.scale.set(0.8);
 
-		this._cardContainers.player.siege.x = boardWidth / 2 - 250;
-		this._cardContainers.player.siege.y = boardHeight * 0.5;
-		this._gameBoard.addChild(this._cardContainers.player.siege);
+		player.hand.setPosition(gameAreaCenterX, boardHeight - 235);
+		player.infantry.setPosition(gameAreaCenterX, 658);
+		player.ranged.setPosition(gameAreaCenterX, 835);
+		player.siege.setPosition(gameAreaCenterX, 1015);
+		player.deck.setPosition(boardWidth - 105, boardHeight - 265);
 
-		// Position enemy playable rows (top half)
-		this._cardContainers.enemy.infantry.x = boardWidth / 2 - 250;
-		this._cardContainers.enemy.infantry.y = boardHeight * 0.15;
-		this._gameBoard.addChild(this._cardContainers.enemy.infantry);
+		player.discard.setPosition(2129, 1208);
 
-		this._cardContainers.enemy.ranged.x = boardWidth / 2 - 250;
-		this._cardContainers.enemy.ranged.y = boardHeight * 0.25;
-		this._gameBoard.addChild(this._cardContainers.enemy.ranged);
+		enemy.hand.setPosition(gameAreaCenterX, -110);
+		enemy.infantry.setPosition(gameAreaCenterX, 458);
+		enemy.ranged.setPosition(gameAreaCenterX, 275);
+		enemy.siege.setPosition(gameAreaCenterX, 99);
+		enemy.discard.setPosition(2129, 196);
+		enemy.deck.setPosition(boardWidth - 105, 155);
 
-		this._cardContainers.enemy.siege.x = boardWidth / 2 - 250;
-		this._cardContainers.enemy.siege.y = boardHeight * 0.35;
-		this._gameBoard.addChild(this._cardContainers.enemy.siege);
+		weather.setPosition(315, boardHeight / 2 - 5);
 
-		// Position discard containers
-		this._cardContainers.player.discard.x = boardWidth - 150;
-		this._cardContainers.player.discard.y = boardHeight - 120;
-		this._gameBoard.addChild(this._cardContainers.player.discard);
-
-		this._cardContainers.enemy.discard.x = boardWidth - 150;
-		this._cardContainers.enemy.discard.y = 40;
-		this._gameBoard.addChild(this._cardContainers.enemy.discard);
-
-		// Position deck containers
-		this._cardContainers.player.deck.x = 30;
-		this._cardContainers.player.deck.y = boardHeight - 120;
-		this._gameBoard.addChild(this._cardContainers.player.deck);
-
-		this._cardContainers.enemy.deck.x = 30;
-		this._cardContainers.enemy.deck.y = 40;
-		this._gameBoard.addChild(this._cardContainers.enemy.deck);
-
-		// Position weather container
-		this._cardContainers.weather.x = 50;
-		this._cardContainers.weather.y = boardHeight / 2 - 50;
-		this._gameBoard.addChild(this._cardContainers.weather);
+		this._gameBoard.addChild(
+			player.infantry,
+			player.ranged,
+			player.siege,
+			player.hand,
+			player.discard,
+			player.deck,
+			enemy.infantry,
+			enemy.ranged,
+			enemy.siege,
+			enemy.hand,
+			enemy.discard,
+			enemy.deck,
+			weather
+		);
 
 		this.addSampleCards();
 	}
@@ -197,6 +191,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			score: 3,
 			faceTexture: "knight",
 		};
+
 		this._cardContainers.player.discard.addCard(playerDiscardCard);
 
 		const enemyDiscardCard: CardData = {

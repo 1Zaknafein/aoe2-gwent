@@ -15,28 +15,25 @@ export class CardContainerManager {
 	public readonly weather: CardContainer;
 
 	constructor() {
-		// Initialize player containers
 		this.player = {
-			hand: new CardContainer(600),
-			infantry: new CardContainer(500),
-			ranged: new CardContainer(500),
-			siege: new CardContainer(500),
-			discard: new CardContainer(120),
-			deck: new CardContainer(80),
+			hand: new CardContainer(600, "player_hand"),
+			infantry: new CardContainer(500, "player_infantry"),
+			ranged: new CardContainer(500, "player_ranged"),
+			siege: new CardContainer(500, "player_siege"),
+			discard: new CardContainer(120, "player_discard"),
+			deck: new CardContainer(80, "player_deck"),
 		};
 
-		// Initialize enemy containers
 		this.enemy = {
-			hand: new CardContainer(600),
-			infantry: new CardContainer(500),
-			ranged: new CardContainer(500),
-			siege: new CardContainer(500),
-			discard: new CardContainer(120),
-			deck: new CardContainer(80),
+			hand: new CardContainer(600, "enemy_hand"),
+			infantry: new CardContainer(500, "enemy_infantry"),
+			ranged: new CardContainer(500, "enemy_ranged"),
+			siege: new CardContainer(500, "enemy_siege"),
+			discard: new CardContainer(120, "enemy_discard"),
+			deck: new CardContainer(80, "enemy_deck"),
 		};
 
-		// Initialize weather container
-		this.weather = new CardContainer(100);
+		this.weather = new CardContainer(100, "weather");
 	}
 
 	public getAllContainers(): CardContainer[] {

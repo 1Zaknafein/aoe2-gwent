@@ -9,9 +9,10 @@ export class CardContainer extends PixiContainer {
 	private _isAnimating: boolean = false;
 	private _activeTransfers: Set<string> = new Set();
 
-	constructor(maxWidth: number = 500) {
+	constructor(maxWidth: number = 500, label: string) {
 		super();
 		this._maxWidth = maxWidth;
+		this.label = label;
 	}
 
 	public addCard(cardData: CardData): void {
@@ -40,6 +41,11 @@ export class CardContainer extends PixiContainer {
 		while (this._cards.length > 0) {
 			this.removeCard();
 		}
+	}
+
+	public setPosition(x: number, y: number): void {
+		this.x = x;
+		this.y = y;
 	}
 
 	private updateCardPositions(): void {
