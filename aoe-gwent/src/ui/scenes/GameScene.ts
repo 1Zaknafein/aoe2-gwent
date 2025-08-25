@@ -1,16 +1,17 @@
-import { PixiContainer, PixiSprite, PixiGraphics } from "../../plugins/engine";
+import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
 import { Faction, CardData, CardContainerManager } from "../../entities/card";
 import { Button } from "../components";
+import { CardInteractionManager } from "../managers";
 import { Sprite } from "pixi.js";
 
 export class GameScene extends PixiContainer implements SceneInterface {
-	private _blackBackground: PixiGraphics;
 	private _gameBoard: Sprite;
 	private _originalBoardWidth: number;
 	private _originalBoardHeight: number;
 
 	private _cardContainers: CardContainerManager;
+	private _cardInteractionManager: CardInteractionManager;
 
 	private _addButton!: Button;
 	private _removeButton!: Button;
@@ -20,11 +21,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	constructor() {
 		super();
 		this.interactive = true;
-
-		this._blackBackground = new PixiGraphics();
-		this._blackBackground.label = "black_background";
-		this._blackBackground.rect(0, 0, 1, 1).fill(0x000000);
-		this.addChild(this._blackBackground);
 
 		this._gameBoard = PixiSprite.from("background");
 
@@ -36,6 +32,9 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.addChild(this._gameBoard);
 
 		this._cardContainers = new CardContainerManager();
+		this._cardInteractionManager = new CardInteractionManager(
+			this._cardContainers
+		);
 
 		this.createCardContainers();
 		this.createTestUI();
@@ -97,75 +96,89 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			weather
 		);
 
+		this._cardInteractionManager.setupContainerInteractivity();
 		this.addSampleCards();
+		this._cardInteractionManager.setupPlayerHandInteractions();
+
+		this.on("pointerup", () =>
+			this._cardInteractionManager.handleGlobalClick()
+		);
 	}
 
 	private addSampleCards(): void {
-		// Add cards to player hand
+		// Create card arrays for batch addition
+
+		// Player hand cards
+		const playerHandCards: CardData[] = [];
 		for (let i = 0; i < 7; i++) {
-			const cardData: CardData = {
+			playerHandCards.push({
 				name: `Britons Knight ${6 + i}`,
 				faction: Faction.BRITONS,
 				score: 6 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.player.hand.addCard(cardData);
+			});
 		}
+		this._cardContainers.player.hand.addCardsBatch(playerHandCards);
 
-		// Add cards to enemy hand
+		// Enemy hand cards
+		const enemyHandCards: CardData[] = [];
 		for (let i = 0; i < 6; i++) {
-			const cardData: CardData = {
+			enemyHandCards.push({
 				name: `Franks Knight ${5 + i}`,
 				faction: Faction.FRANKS,
 				score: 5 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.enemy.hand.addCard(cardData);
+			});
 		}
+		this._cardContainers.enemy.hand.addCardsBatch(enemyHandCards);
 
-		// Add cards to player infantry row
+		// Player infantry row cards
+		const playerInfantryCards: CardData[] = [];
 		for (let i = 0; i < 2; i++) {
-			const cardData: CardData = {
+			playerInfantryCards.push({
 				name: `Britons Infantry ${8 + i}`,
 				faction: Faction.BRITONS,
 				score: 8 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.player.infantry.addCard(cardData);
+			});
 		}
+		this._cardContainers.player.infantry.addCardsBatch(playerInfantryCards);
 
-		// Add cards to enemy infantry row
+		// Enemy infantry row cards
+		const enemyInfantryCards: CardData[] = [];
 		for (let i = 0; i < 2; i++) {
-			const cardData: CardData = {
+			enemyInfantryCards.push({
 				name: `Franks Infantry ${7 + i}`,
 				faction: Faction.FRANKS,
 				score: 7 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.enemy.infantry.addCard(cardData);
+			});
 		}
+		this._cardContainers.enemy.infantry.addCardsBatch(enemyInfantryCards);
 
-		// Add cards to player ranged row
+		// Player ranged row cards
+		const playerRangedCards: CardData[] = [];
 		for (let i = 0; i < 3; i++) {
-			const cardData: CardData = {
+			playerRangedCards.push({
 				name: `Britons Ranged ${5 + i}`,
 				faction: Faction.BRITONS,
 				score: 5 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.player.ranged.addCard(cardData);
+			});
 		}
+		this._cardContainers.player.ranged.addCardsBatch(playerRangedCards);
 
-		// Add cards to enemy ranged row
+		// Enemy ranged row cards
+		const enemyRangedCards: CardData[] = [];
 		for (let i = 0; i < 3; i++) {
-			const cardData: CardData = {
+			enemyRangedCards.push({
 				name: `Franks Ranged ${4 + i}`,
 				faction: Faction.FRANKS,
 				score: 4 + i,
 				faceTexture: "knight",
-			};
-			this._cardContainers.enemy.ranged.addCard(cardData);
+			});
 		}
+		this._cardContainers.enemy.ranged.addCardsBatch(enemyRangedCards);
 
 		// Add single cards to siege rows
 		const playerSiegeCard: CardData = {
@@ -191,7 +204,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			score: 3,
 			faceTexture: "knight",
 		};
-
 		this._cardContainers.player.discard.addCard(playerDiscardCard);
 
 		const enemyDiscardCard: CardData = {
@@ -202,34 +214,38 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		};
 		this._cardContainers.enemy.discard.addCard(enemyDiscardCard);
 
-		// Add cards to deck piles (stacked)
+		// Create deck cards for batch addition
+		const playerDeckCards: CardData[] = [];
+		const enemyDeckCards: CardData[] = [];
 		for (let i = 0; i < 15; i++) {
-			const playerDeckCard: CardData = {
+			playerDeckCards.push({
 				name: "Deck Card",
 				faction: Faction.BRITONS,
 				score: 1,
 				faceTexture: "knight",
-			};
-			this._cardContainers.player.deck.addCard(playerDeckCard);
+			});
 
-			const enemyDeckCard: CardData = {
+			enemyDeckCards.push({
 				name: "Deck Card",
 				faction: Faction.FRANKS,
 				score: 1,
 				faceTexture: "knight",
-			};
-			this._cardContainers.enemy.deck.addCard(enemyDeckCard);
+			});
 		}
+		this._cardContainers.player.deck.addCardsBatch(playerDeckCards);
+		this._cardContainers.enemy.deck.addCardsBatch(enemyDeckCards);
 
+		// Create weather cards for batch addition
+		const weatherCards: CardData[] = [];
 		for (let i = 0; i < 2; i++) {
-			const weatherCard: CardData = {
+			weatherCards.push({
 				name: `Weather Card ${i + 1}`,
 				faction: Faction.BRITONS,
 				score: 0,
 				faceTexture: "knight",
-			};
-			this._cardContainers.weather.addCard(weatherCard);
+			});
 		}
+		this._cardContainers.weather.addCardsBatch(weatherCards);
 	}
 
 	private createTestUI(): void {
@@ -330,9 +346,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	private resizeAndCenter(screenWidth: number, screenHeight: number): void {
-		this._blackBackground.width = screenWidth;
-		this._blackBackground.height = screenHeight;
-
 		const scaleX = screenWidth / this._originalBoardWidth;
 		const scaleY = screenHeight / this._originalBoardHeight;
 		const scale = Math.min(scaleX, scaleY);

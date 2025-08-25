@@ -1,3 +1,4 @@
+import { FederatedPointerEvent, Graphics } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
 import { Card, CardData } from "../card";
 import { gsap } from "gsap";
@@ -5,9 +6,12 @@ import { gsap } from "gsap";
 export class CardContainer extends PixiContainer {
 	private _cards: Card[] = [];
 	private _maxWidth: number;
-	private _cardSpacing: number = 20;
+	private _cardSpacing: number = 5;
 	private _isAnimating: boolean = false;
-	private _activeTransfers: Set<string> = new Set();
+	private _activeTransfers: Set<GSAPTween> = new Set();
+	private _debugRect: Graphics | null = null;
+	private _isContainerInteractive: boolean = false;
+	private _areCardsInteractive: boolean = true;
 
 	/**
 	 * Create a new CardContainer.
@@ -18,6 +22,8 @@ export class CardContainer extends PixiContainer {
 		super();
 		this._maxWidth = maxWidth;
 		this.label = label;
+
+		this.createDebugRect();
 	}
 
 	public get cardCount(): number {
@@ -26,6 +32,57 @@ export class CardContainer extends PixiContainer {
 
 	public get maxWidth(): number {
 		return this._maxWidth;
+	}
+
+	public get isContainerInteractive(): boolean {
+		return this._isContainerInteractive;
+	}
+
+	public get areCardsInteractive(): boolean {
+		return this._areCardsInteractive;
+	}
+
+	/**
+	 * Get the number of active transfer animations.
+	 */
+	public get activeTransferCount(): number {
+		return this._activeTransfers.size;
+	}
+
+	/**
+	 * Check if this container has any active transfer animations.
+	 */
+	public get hasActiveTransfers(): boolean {
+		return this._activeTransfers.size > 0;
+	}
+
+	/**
+	 * Cancel all active transfer animations for this container.
+	 * This can be useful for cleanup or when changing scenes.
+	 */
+	public cancelAllTransfers(): void {
+		this._activeTransfers.forEach((tween) => {
+			tween.kill();
+		});
+		this._activeTransfers.clear();
+	}
+
+	/**
+	 * Pause all active transfer animations for this container.
+	 */
+	public pauseAllTransfers(): void {
+		this._activeTransfers.forEach((tween) => {
+			tween.pause();
+		});
+	}
+
+	/**
+	 * Resume all paused transfer animations for this container.
+	 */
+	public resumeAllTransfers(): void {
+		this._activeTransfers.forEach((tween) => {
+			tween.resume();
+		});
 	}
 
 	public setMaxWidth(width: number): void {
@@ -45,6 +102,33 @@ export class CardContainer extends PixiContainer {
 		const card = new Card(cardData);
 		this._cards.push(card);
 		this.addChild(card);
+
+		// Apply current interactivity settings to the new card
+		card.eventMode = this._areCardsInteractive ? "static" : "none";
+		card.cursor = this._areCardsInteractive ? "pointer" : "default";
+
+		// Emit event for new card added (useful for setting up interactions)
+		this.emit("cardAdded", { card, container: this });
+
+		this.updateCardPositions();
+	}
+
+	/**
+	 * Add multiple cards to the container in a batch, updating positions only once.
+	 * This has no animations, used on initial setup.
+	 * @param cardData Card data to add.
+	 */
+	public addCardsBatch(cardData: CardData[]): void {
+		cardData.forEach((cardData) => {
+			const card = new Card(cardData);
+			this._cards.push(card);
+			this.addChild(card);
+
+			card.eventMode = this._areCardsInteractive ? "static" : "none";
+			card.cursor = this._areCardsInteractive ? "pointer" : "default";
+
+			this.emit("cardAdded", { card, container: this });
+		});
 
 		this.updateCardPositions();
 	}
@@ -72,7 +156,55 @@ export class CardContainer extends PixiContainer {
 	public setPosition(x: number, y: number): void {
 		this.x = x;
 		this.y = y;
+		this.updateDebugRect();
 	}
+
+	private createDebugRect(): void {
+		this._debugRect = new Graphics();
+		this._debugRect.alpha = 0.2;
+		this.addChild(this._debugRect);
+		this.updateDebugRect();
+	}
+
+	private updateDebugRect(): void {
+		if (!this._debugRect) return;
+
+		this._debugRect.clear();
+		this._debugRect.rect(-this._maxWidth / 2, -110, this._maxWidth, 230);
+
+		// Use different colors based on interactivity
+		const color = this._isContainerInteractive ? 0x00ff00 : 0x666666;
+		this._debugRect.fill({ color });
+	}
+
+	public setContainerInteractive(interactive: boolean): void {
+		this._isContainerInteractive = interactive;
+		this.eventMode = interactive ? "static" : "auto";
+		this.cursor = interactive ? "pointer" : "default";
+
+		if (interactive) {
+			this.on("pointerdown", this.onContainerClick);
+		} else {
+			this.off("pointerdown", this.onContainerClick);
+		}
+
+		this.updateDebugRect();
+	}
+
+	public setCardsInteractive(interactive: boolean): void {
+		this._areCardsInteractive = interactive;
+		this._cards.forEach((card) => {
+			card.eventMode = interactive ? "static" : "none";
+			card.cursor = interactive ? "pointer" : "default";
+		});
+	}
+
+	private onContainerClick = (event: FederatedPointerEvent): void => {
+		this.emit("containerClick", {
+			container: this,
+			position: event.getLocalPosition(this),
+		});
+	};
 
 	public async transferCardTo(
 		cardIndex: number,
@@ -81,10 +213,6 @@ export class CardContainer extends PixiContainer {
 		if (cardIndex < 0 || cardIndex >= this._cards.length) return;
 
 		const cardToTransfer = this._cards[cardIndex];
-		const transferId = `${Date.now()}_${Math.random()}`;
-
-		this._activeTransfers.add(transferId);
-		targetContainer._activeTransfers.add(transferId);
 
 		const sourceScale = this.scale.x;
 		const targetScale = targetContainer.scale.x;
@@ -120,7 +248,7 @@ export class CardContainer extends PixiContainer {
 		cardToTransfer.scale.set(sceneScale);
 
 		return new Promise<void>((resolve) => {
-			gsap.to(cardToTransfer, {
+			const positionTween = gsap.to(cardToTransfer, {
 				x: endPosInScene.x,
 				y: endPosInScene.y,
 				duration: 0.4,
@@ -129,7 +257,7 @@ export class CardContainer extends PixiContainer {
 
 			const targetVisualScale = baseCardScale * targetScale;
 
-			gsap.to(cardToTransfer.scale, {
+			const scaleTween = gsap.to(cardToTransfer.scale, {
 				x: targetVisualScale,
 				y: targetVisualScale,
 				duration: 0.4,
@@ -151,8 +279,12 @@ export class CardContainer extends PixiContainer {
 
 					targetContainer._cards.push(cardToTransfer);
 					targetContainer.addChild(cardToTransfer);
-					this._activeTransfers.delete(transferId);
-					targetContainer._activeTransfers.delete(transferId);
+
+					// Remove the animations from active transfers
+					this._activeTransfers.delete(positionTween);
+					this._activeTransfers.delete(scaleTween);
+					targetContainer._activeTransfers.delete(positionTween);
+					targetContainer._activeTransfers.delete(scaleTween);
 
 					if (this._activeTransfers.size === 0) {
 						this.updateCardPositions();
@@ -165,6 +297,12 @@ export class CardContainer extends PixiContainer {
 					resolve();
 				},
 			});
+
+			this._activeTransfers.add(positionTween);
+			this._activeTransfers.add(scaleTween);
+
+			targetContainer._activeTransfers.add(positionTween);
+			targetContainer._activeTransfers.add(scaleTween);
 		});
 	}
 
