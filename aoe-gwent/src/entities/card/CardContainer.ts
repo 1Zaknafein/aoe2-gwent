@@ -9,10 +9,36 @@ export class CardContainer extends PixiContainer {
 	private _isAnimating: boolean = false;
 	private _activeTransfers: Set<string> = new Set();
 
-	constructor(maxWidth: number = 500, label: string) {
+	/**
+	 * Create a new CardContainer.
+	 * @param maxWidth Maximum width of the container
+	 * @param label Label for the container.
+	 */
+	constructor(maxWidth: number, label: string) {
 		super();
 		this._maxWidth = maxWidth;
 		this.label = label;
+	}
+
+	public get cardCount(): number {
+		return this._cards.length;
+	}
+
+	public get maxWidth(): number {
+		return this._maxWidth;
+	}
+
+	public setMaxWidth(width: number): void {
+		this._maxWidth = width;
+		this.updateCardPositions();
+	}
+
+	public getCard(index: number): Card | undefined {
+		return this._cards[index];
+	}
+
+	public getAllCards(): Card[] {
+		return [...this._cards];
 	}
 
 	public addCard(cardData: CardData): void {
@@ -48,6 +74,104 @@ export class CardContainer extends PixiContainer {
 		this.y = y;
 	}
 
+	public async transferCardTo(
+		cardIndex: number,
+		targetContainer: CardContainer
+	): Promise<void> {
+		if (cardIndex < 0 || cardIndex >= this._cards.length) return;
+
+		const cardToTransfer = this._cards[cardIndex];
+		const transferId = `${Date.now()}_${Math.random()}`;
+
+		this._activeTransfers.add(transferId);
+		targetContainer._activeTransfers.add(transferId);
+
+		const sourceScale = this.scale.x;
+		const targetScale = targetContainer.scale.x;
+
+		const baseCardScale = 0.5;
+		const visualSourceScale = baseCardScale * sourceScale;
+		const sceneScale = visualSourceScale;
+
+		const cardLocalPos = { x: cardToTransfer.x, y: cardToTransfer.y };
+		const cardGlobalPos = this.toGlobal(cardLocalPos);
+
+		// Calculate where this card will be positioned in the target container
+		const targetCardIndex = targetContainer._cards.length; // This will be the new card's index
+		const targetFinalPos = this.calculateCardPosition(
+			targetContainer,
+			targetCardIndex
+		);
+
+		const targetFinalGlobal = targetContainer.toGlobal(targetFinalPos);
+
+		this._cards.splice(cardIndex, 1);
+		this.removeChild(cardToTransfer);
+
+		const scene = this.parent!;
+		scene.addChild(cardToTransfer);
+
+		const startPosInScene = scene.toLocal(cardGlobalPos);
+		const endPosInScene = scene.toLocal(targetFinalGlobal);
+
+		cardToTransfer.x = startPosInScene.x;
+		cardToTransfer.y = startPosInScene.y;
+
+		cardToTransfer.scale.set(sceneScale);
+
+		return new Promise<void>((resolve) => {
+			gsap.to(cardToTransfer, {
+				x: endPosInScene.x,
+				y: endPosInScene.y,
+				duration: 0.4,
+				ease: "power2.inOut",
+			});
+
+			const targetVisualScale = baseCardScale * targetScale;
+
+			gsap.to(cardToTransfer.scale, {
+				x: targetVisualScale,
+				y: targetVisualScale,
+				duration: 0.4,
+				ease: "power2.inOut",
+				onComplete: () => {
+					scene.removeChild(cardToTransfer);
+
+					// Calculate the final position where this card should be
+					const finalCardIndex = targetContainer._cards.length;
+					const finalPos = this.calculateCardPosition(
+						targetContainer,
+						finalCardIndex
+					);
+
+					// Position the card at final position and restore base scale
+					cardToTransfer.x = finalPos.x;
+					cardToTransfer.y = finalPos.y;
+					cardToTransfer.scale.set(baseCardScale);
+
+					targetContainer._cards.push(cardToTransfer);
+					targetContainer.addChild(cardToTransfer);
+					this._activeTransfers.delete(transferId);
+					targetContainer._activeTransfers.delete(transferId);
+
+					if (this._activeTransfers.size === 0) {
+						this.updateCardPositions();
+					}
+
+					if (targetContainer._activeTransfers.size === 0) {
+						targetContainer.updateCardPositions();
+					}
+
+					resolve();
+				},
+			});
+		});
+	}
+
+	/**
+	 * Update card positions within the container.
+	 * Cards will be spaced evenly, and if they exceed maxWidth, they will overlap.
+	 */
 	private updateCardPositions(): void {
 		if (this._cards.length === 0) return;
 		if (this._isAnimating) return;
@@ -94,14 +218,26 @@ export class CardContainer extends PixiContainer {
 				targetX = startX + index * (cardWidth + actualSpacing);
 			}
 
+			// Check if card is already very close to target position (within 1 pixel)
+			const isAlreadyInPosition =
+				Math.abs(card.x - targetX) < 1 && Math.abs(card.y - 0) < 1;
+
 			const promise = new Promise<void>((resolve) => {
-				gsap.to(card, {
-					x: targetX,
-					y: 0,
-					duration: 0.3,
-					ease: "power2.out",
-					onComplete: () => resolve(),
-				});
+				if (isAlreadyInPosition) {
+					// Card is already in correct position, no need to animate
+					card.x = targetX;
+					card.y = 0;
+					resolve();
+				} else {
+					// Animate to target position
+					gsap.to(card, {
+						x: targetX,
+						y: 0,
+						duration: 0.3,
+						ease: "power2.out",
+						onComplete: () => resolve(),
+					});
+				}
 			});
 
 			animationPromises.push(promise);
@@ -112,85 +248,62 @@ export class CardContainer extends PixiContainer {
 		});
 	}
 
-	public get cardCount(): number {
-		return this._cards.length;
-	}
+	/**
+	 * Calculate the position for a card in the container based on index,
+	 * taking into account maxWidth and spacing/overlap.
+	 * @param container Target container
+	 * @param cardIndex Card index to calculate position for
+	 * @returns Position {x, y} for the card
+	 */
+	private calculateCardPosition(
+		container: CardContainer,
+		cardIndex: number
+	): { x: number; y: number } {
+		const totalCards = container._cards.length + 1; // +1 for the card that will be added
 
-	public get maxWidth(): number {
-		return this._maxWidth;
-	}
+		// Get card width from existing cards, or use a default if container is empty
+		let cardWidth = 100; // default
+		if (container._cards.length > 0) {
+			cardWidth = container._cards[0].width;
+		} else if (this._cards.length > 0) {
+			// Use width from source container if target is empty
+			cardWidth = this._cards[0].width;
+		}
 
-	public setMaxWidth(width: number): void {
-		this._maxWidth = width;
-		this.updateCardPositions();
-	}
+		const cardCount = totalCards;
+		const totalWidthNeeded =
+			cardCount * cardWidth + (cardCount - 1) * container._cardSpacing;
 
-	public getCard(index: number): Card | undefined {
-		return this._cards[index];
-	}
+		let actualSpacing = container._cardSpacing;
+		let overlap = 0;
 
-	public getAllCards(): Card[] {
-		return [...this._cards];
-	}
+		// If cards exceed max width, calculate overlap
+		if (totalWidthNeeded > container._maxWidth) {
+			const availableSpaceForSpacing =
+				container._maxWidth - cardCount * cardWidth;
 
-	public async transferCardTo(
-		cardIndex: number,
-		targetContainer: CardContainer
-	): Promise<void> {
-		if (cardIndex < 0 || cardIndex >= this._cards.length) return;
+			if (availableSpaceForSpacing >= 0) {
+				actualSpacing = availableSpaceForSpacing / (cardCount - 1);
+			} else {
+				actualSpacing = 0;
+				overlap = Math.abs(availableSpaceForSpacing) / (cardCount - 1);
+			}
+		}
 
-		const cardToTransfer = this._cards[cardIndex];
-		const transferId = `${Date.now()}_${Math.random()}`;
+		const totalWidth =
+			overlap > 0
+				? container._maxWidth
+				: cardCount * cardWidth + (cardCount - 1) * actualSpacing;
 
-		this._activeTransfers.add(transferId);
-		targetContainer._activeTransfers.add(transferId);
+		const startX = -totalWidth / 2 + cardWidth / 2;
 
-		const globalPos = cardToTransfer.toGlobal(cardToTransfer.position);
+		let targetX: number;
+		if (overlap > 0) {
+			targetX = startX + cardIndex * (cardWidth - overlap);
+		} else {
+			targetX = startX + cardIndex * (cardWidth + actualSpacing);
+		}
 
-		this._cards.splice(cardIndex, 1);
-		this.removeChild(cardToTransfer);
-
-		const scene = this.parent!;
-		scene.addChild(cardToTransfer);
-
-		const localPos = scene.toLocal(globalPos);
-		cardToTransfer.x = localPos.x;
-		cardToTransfer.y = localPos.y;
-
-		const targetGlobalPos = targetContainer.toGlobal({ x: 0, y: 0 });
-		const targetLocalPos = scene.toLocal(targetGlobalPos);
-
-		// Animate the card to the target container
-		return new Promise<void>((resolve) => {
-			gsap.to(cardToTransfer, {
-				x: targetLocalPos.x,
-				y: targetLocalPos.y,
-				duration: 0.4,
-				ease: "power2.inOut",
-				onComplete: () => {
-					scene.removeChild(cardToTransfer);
-
-					cardToTransfer.x = 0;
-					cardToTransfer.y = 0;
-
-					targetContainer._cards.push(cardToTransfer);
-					targetContainer.addChild(cardToTransfer);
-
-					this._activeTransfers.delete(transferId);
-
-					targetContainer._activeTransfers.delete(transferId);
-
-					if (this._activeTransfers.size === 0) {
-						this.updateCardPositions();
-					}
-
-					if (targetContainer._activeTransfers.size === 0) {
-						targetContainer.updateCardPositions();
-					}
-
-					resolve();
-				},
-			});
-		});
+		return { x: targetX, y: 0 };
 	}
 }

@@ -16,19 +16,19 @@ export class CardContainerManager {
 
 	constructor() {
 		this.player = {
-			hand: new CardContainer(600, "player_hand"),
-			infantry: new CardContainer(500, "player_infantry"),
-			ranged: new CardContainer(500, "player_ranged"),
-			siege: new CardContainer(500, "player_siege"),
+			hand: new CardContainer(1500, "player_hand"),
+			infantry: new CardContainer(1300, "player_infantry"),
+			ranged: new CardContainer(1300, "player_ranged"),
+			siege: new CardContainer(1300, "player_siege"),
 			discard: new CardContainer(120, "player_discard"),
 			deck: new CardContainer(80, "player_deck"),
 		};
 
 		this.enemy = {
-			hand: new CardContainer(600, "enemy_hand"),
-			infantry: new CardContainer(500, "enemy_infantry"),
-			ranged: new CardContainer(500, "enemy_ranged"),
-			siege: new CardContainer(500, "enemy_siege"),
+			hand: new CardContainer(1500, "enemy_hand"),
+			infantry: new CardContainer(1300, "enemy_infantry"),
+			ranged: new CardContainer(1300, "enemy_ranged"),
+			siege: new CardContainer(1300, "enemy_siege"),
 			discard: new CardContainer(120, "enemy_discard"),
 			deck: new CardContainer(80, "enemy_deck"),
 		};
