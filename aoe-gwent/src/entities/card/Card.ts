@@ -9,7 +9,6 @@ export class Card extends PixiContainer {
 	private _cardData: CardData;
 	private _cardBack!: PixiSprite;
 	private _cardFace!: PixiSprite;
-	private _cardBorder!: PixiSprite;
 	private _scoreText!: PixiText;
 	private _typeIcon!: PixiSprite;
 	private _scoreBackground!: PixiGraphics;
@@ -36,10 +35,6 @@ export class Card extends PixiContainer {
 		this._cardFace.visible = true;
 		this.addChild(this._cardFace);
 
-		this._cardBorder = PixiSprite.from("card_border");
-		this._cardBorder.anchor.set(0.5);
-		this.addChild(this._cardBorder);
-
 		this._scoreBackground = new PixiGraphics();
 		this._scoreBackground.moveTo(0, 0);
 		this._scoreBackground.arc(0, 0, 50, 0, Math.PI / 2);
@@ -55,10 +50,10 @@ export class Card extends PixiContainer {
 			text: this._cardData.score.toString(),
 			style: {
 				fontFamily: "Arial",
-				fontSize: 30,
+				fontSize: 36,
 				fontWeight: "bold",
 				fill: 0xffffff,
-				stroke: { color: 0x000000, width: 6 },
+				stroke: { color: 0x000000, width: 2 },
 				padding: 2,
 			},
 		});
@@ -70,12 +65,10 @@ export class Card extends PixiContainer {
 		this.addChild(this._scoreText);
 
 		this._iconBackground = new PixiGraphics();
-
 		this._iconBackground.moveTo(0, 0);
 		this._iconBackground.arc(0, 0, 50, Math.PI, Math.PI * 1.5);
 		this._iconBackground.lineTo(0, 0);
 		this._iconBackground.fill({ color: "#6b0f18" });
-
 		this._iconBackground.x = this._cardBack.width / 2 - 8;
 		this._iconBackground.y = this._cardBack.height / 2 - 8;
 		this._iconBackground.visible = true;
