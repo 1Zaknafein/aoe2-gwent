@@ -20,9 +20,8 @@ export class Deck extends PixiContainer {
 		for (let i = 0; i < this._maxVisibleCards; i++) {
 			const cardSprite = PixiSprite.from("card_back");
 			cardSprite.anchor.set(0.5);
-			cardSprite.scale.set(0.5);
-			cardSprite.x = i * -3;
-			cardSprite.y = i * -1;
+			cardSprite.x = i * -6;
+			cardSprite.y = i * -2;
 
 			this._cardSprites.push(cardSprite);
 			this.addChild(cardSprite);

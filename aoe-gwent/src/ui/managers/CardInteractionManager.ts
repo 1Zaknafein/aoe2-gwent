@@ -16,10 +16,10 @@ export class CardInteractionManager {
 		const { player, enemy } = this._cardContainers;
 
 		const playableRows = [
-			player.infantry,
+			player.melee,
 			player.ranged,
 			player.siege,
-			enemy.infantry,
+			enemy.melee,
 			enemy.ranged,
 			enemy.siege,
 		];

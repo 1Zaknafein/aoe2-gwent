@@ -1,6 +1,6 @@
 import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
-import { Faction, CardData, CardContainerManager } from "../../entities/card";
+import { CardData, CardContainerManager, CardType } from "../../entities/card";
 import { Button } from "../components";
 import { CardInteractionManager } from "../managers";
 import { Sprite } from "pixi.js";
@@ -50,10 +50,10 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		const { player, enemy, weather } = this._cardContainers;
 
 		[
-			player.infantry,
+			player.melee,
 			player.ranged,
 			player.siege,
-			enemy.infantry,
+			enemy.melee,
 			enemy.ranged,
 			enemy.siege,
 		].forEach((row) => row.scale.set(0.67));
@@ -65,7 +65,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		);
 
 		player.hand.setPosition(gameAreaCenterX, boardHeight - 235);
-		player.infantry.setPosition(gameAreaCenterX, 658);
+		player.melee.setPosition(gameAreaCenterX, 658);
 		player.ranged.setPosition(gameAreaCenterX, 835);
 		player.siege.setPosition(gameAreaCenterX, 1015);
 		player.deck.setPosition(boardWidth - 105, boardHeight - 265);
@@ -73,7 +73,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		player.discard.setPosition(2132, 1200);
 
 		enemy.hand.setPosition(gameAreaCenterX, -110);
-		enemy.infantry.setPosition(gameAreaCenterX, 458);
+		enemy.melee.setPosition(gameAreaCenterX, 458);
 		enemy.ranged.setPosition(gameAreaCenterX, 275);
 		enemy.siege.setPosition(gameAreaCenterX, 99);
 		enemy.discard.setPosition(2129, 196);
@@ -82,13 +82,13 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		weather.setPosition(315, boardHeight / 2 - 5);
 
 		this._gameBoard.addChild(
-			player.infantry,
+			player.melee,
 			player.ranged,
 			player.siege,
 			player.hand,
 			player.discard,
 			player.deck,
-			enemy.infantry,
+			enemy.melee,
 			enemy.ranged,
 			enemy.siege,
 			enemy.hand,
@@ -112,15 +112,17 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		// Player hand cards
 		const playerHandCards: CardData[] = [];
 		for (let i = 0; i < 7; i++) {
-			const cardTypes = ["archer", "knight", "steppe_lancer"];
-			const cardType = cardTypes[i % cardTypes.length];
-			const cardName =
-				cardType.charAt(0).toUpperCase() + cardType.slice(1).replace("_", " ");
+			const cardTypes = ["archer", "knight", "mangonel"];
+			const cardTypeEnums = [CardType.RANGED, CardType.MELEE, CardType.SIEGE];
+			const cardIndex = i % cardTypes.length;
+			const cardType = cardTypes[cardIndex];
+			const cardTypeEnum = cardTypeEnums[cardIndex];
+			const cardName = cardType.charAt(0).toUpperCase() + cardType.slice(1);
 			playerHandCards.push({
 				name: `Britons ${cardName} ${6 + i}`,
-				faction: Faction.BRITONS,
 				score: 6 + i,
 				faceTexture: cardType,
+				type: cardTypeEnum,
 			});
 		}
 		this._cardContainers.player.hand.addCardsBatch(playerHandCards);
@@ -128,51 +130,53 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		// Enemy hand cards
 		const enemyHandCards: CardData[] = [];
 		for (let i = 0; i < 6; i++) {
-			const cardTypes = ["archer", "knight", "steppe_lancer"];
-			const cardType = cardTypes[i % cardTypes.length];
-			const cardName =
-				cardType.charAt(0).toUpperCase() + cardType.slice(1).replace("_", " ");
+			const cardTypes = ["archer", "knight", "mangonel"];
+			const cardTypeEnums = [CardType.RANGED, CardType.MELEE, CardType.SIEGE];
+			const cardIndex = i % cardTypes.length;
+			const cardType = cardTypes[cardIndex];
+			const cardTypeEnum = cardTypeEnums[cardIndex];
+			const cardName = cardType.charAt(0).toUpperCase() + cardType.slice(1);
 			enemyHandCards.push({
 				name: `Franks ${cardName} ${5 + i}`,
-				faction: Faction.FRANKS,
 				score: 5 + i,
 				faceTexture: cardType,
+				type: cardTypeEnum,
 			});
 		}
 		this._cardContainers.enemy.hand.addCardsBatch(enemyHandCards);
 
-		// Player infantry row cards
-		const playerInfantryCards: CardData[] = [];
+		// Player melee row cards
+		const playerMeleeCards: CardData[] = [];
 		for (let i = 0; i < 2; i++) {
-			playerInfantryCards.push({
-				name: `Britons Infantry ${8 + i}`,
-				faction: Faction.BRITONS,
+			playerMeleeCards.push({
+				name: `Britons Knight ${8 + i}`,
 				score: 8 + i,
 				faceTexture: "knight",
+				type: CardType.MELEE,
 			});
 		}
-		this._cardContainers.player.infantry.addCardsBatch(playerInfantryCards);
+		this._cardContainers.player.melee.addCardsBatch(playerMeleeCards);
 
-		// Enemy infantry row cards
-		const enemyInfantryCards: CardData[] = [];
+		// Enemy melee row cards
+		const enemyMeleeCards: CardData[] = [];
 		for (let i = 0; i < 2; i++) {
-			enemyInfantryCards.push({
-				name: `Franks Infantry ${7 + i}`,
-				faction: Faction.FRANKS,
+			enemyMeleeCards.push({
+				name: `Franks Knight ${7 + i}`,
 				score: 7 + i,
 				faceTexture: "knight",
+				type: CardType.MELEE,
 			});
 		}
-		this._cardContainers.enemy.infantry.addCardsBatch(enemyInfantryCards);
+		this._cardContainers.enemy.melee.addCardsBatch(enemyMeleeCards);
 
 		// Player ranged row cards
 		const playerRangedCards: CardData[] = [];
 		for (let i = 0; i < 3; i++) {
 			playerRangedCards.push({
 				name: `Britons Archer ${5 + i}`,
-				faction: Faction.BRITONS,
 				score: 5 + i,
 				faceTexture: "archer",
+				type: CardType.RANGED,
 			});
 		}
 		this._cardContainers.player.ranged.addCardsBatch(playerRangedCards);
@@ -182,44 +186,44 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		for (let i = 0; i < 3; i++) {
 			enemyRangedCards.push({
 				name: `Franks Archer ${4 + i}`,
-				faction: Faction.FRANKS,
 				score: 4 + i,
 				faceTexture: "archer",
+				type: CardType.RANGED,
 			});
 		}
 		this._cardContainers.enemy.ranged.addCardsBatch(enemyRangedCards);
 
 		// Add single cards to siege rows
 		const playerSiegeCard: CardData = {
-			name: "Britons Siege Engine",
-			faction: Faction.BRITONS,
+			name: "Britons Mangonel",
 			score: 9,
-			faceTexture: "steppe_lancer",
+			faceTexture: "mangonel",
+			type: CardType.SIEGE,
 		};
 		this._cardContainers.player.siege.addCard(playerSiegeCard);
 
 		const enemySiegeCard: CardData = {
-			name: "Franks Siege Engine",
-			faction: Faction.FRANKS,
+			name: "Franks Mangonel",
 			score: 8,
-			faceTexture: "steppe_lancer",
+			faceTexture: "mangonel",
+			type: CardType.SIEGE,
 		};
 		this._cardContainers.enemy.siege.addCard(enemySiegeCard);
 
 		// Add cards to discard piles
 		const playerDiscardCard: CardData = {
 			name: "Discarded Britons Knight",
-			faction: Faction.BRITONS,
 			score: 3,
 			faceTexture: "knight",
+			type: CardType.MELEE,
 		};
 		this._cardContainers.player.discard.addCard(playerDiscardCard);
 
 		const enemyDiscardCard: CardData = {
 			name: "Discarded Franks Knight",
-			faction: Faction.FRANKS,
 			score: 2,
 			faceTexture: "knight",
+			type: CardType.MELEE,
 		};
 		this._cardContainers.enemy.discard.addCard(enemyDiscardCard);
 
@@ -228,9 +232,9 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		for (let i = 0; i < 2; i++) {
 			weatherCards.push({
 				name: `Weather Card ${i + 1}`,
-				faction: Faction.BRITONS,
 				score: 0,
 				faceTexture: "archer",
+				type: CardType.RANGED,
 			});
 		}
 		this._cardContainers.weather.addCardsBatch(weatherCards);
@@ -287,21 +291,20 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	private addRandomCardToPlayer(): void {
-		const factions = [Faction.BRITONS, Faction.FRANKS];
-		const cardTypes = ["archer", "knight", "steppe_lancer"];
-		const randomFaction = factions[Math.floor(Math.random() * factions.length)];
-		const randomCardType =
-			cardTypes[Math.floor(Math.random() * cardTypes.length)];
+		const cardTypes = ["archer", "knight", "mangonel"];
+		const cardTypeEnums = [CardType.RANGED, CardType.MELEE, CardType.SIEGE];
+		const randomTypeIndex = Math.floor(Math.random() * cardTypes.length);
+		const randomCardType = cardTypes[randomTypeIndex];
+		const randomCardTypeEnum = cardTypeEnums[randomTypeIndex];
 		const randomScore = Math.floor(Math.random() * 10) + 1;
 		const cardName =
-			randomCardType.charAt(0).toUpperCase() +
-			randomCardType.slice(1).replace("_", " ");
+			randomCardType.charAt(0).toUpperCase() + randomCardType.slice(1);
 
 		const cardData: CardData = {
-			name: `${randomFaction} ${cardName}`,
-			faction: randomFaction,
+			name: cardName,
 			score: randomScore,
 			faceTexture: randomCardType,
+			type: randomCardTypeEnum,
 		};
 
 		this._cardContainers.player.hand.addCard(cardData);
@@ -309,10 +312,10 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 	private async transferCard(): Promise<void> {
 		if (this._cardContainers.player.hand.cardCount > 0) {
-			// Transfer the first card from player hand to player infantry row
+			// Transfer the first card from player hand to player melee row
 			await this._cardContainers.player.hand.transferCardTo(
 				0,
-				this._cardContainers.player.infantry
+				this._cardContainers.player.melee
 			);
 		}
 	}

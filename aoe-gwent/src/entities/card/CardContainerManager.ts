@@ -1,15 +1,6 @@
 import { CardContainer } from "./CardContainer";
 import { Deck } from "../deck";
 
-export interface PlayerContainers {
-	hand: CardContainer;
-	infantry: CardContainer;
-	ranged: CardContainer;
-	siege: CardContainer;
-	discard: CardContainer;
-	deck: Deck;
-}
-
 export class CardContainerManager {
 	public readonly player: PlayerContainers;
 	public readonly enemy: PlayerContainers;
@@ -18,7 +9,7 @@ export class CardContainerManager {
 	constructor() {
 		this.player = {
 			hand: new CardContainer(1500, "player_hand"),
-			infantry: new CardContainer(1300, "player_infantry"),
+			melee: new CardContainer(1300, "player_melee"),
 			ranged: new CardContainer(1300, "player_ranged"),
 			siege: new CardContainer(1300, "player_siege"),
 			discard: new CardContainer(120, "player_discard"),
@@ -27,7 +18,7 @@ export class CardContainerManager {
 
 		this.enemy = {
 			hand: new CardContainer(1500, "enemy_hand"),
-			infantry: new CardContainer(1300, "enemy_infantry"),
+			melee: new CardContainer(1300, "enemy_melee"),
 			ranged: new CardContainer(1300, "enemy_ranged"),
 			siege: new CardContainer(1300, "enemy_siege"),
 			discard: new CardContainer(120, "enemy_discard"),
@@ -40,12 +31,12 @@ export class CardContainerManager {
 	public getAllContainers(): CardContainer[] {
 		return [
 			this.player.hand,
-			this.player.infantry,
+			this.player.melee,
 			this.player.ranged,
 			this.player.siege,
 			this.player.discard,
 			this.enemy.hand,
-			this.enemy.infantry,
+			this.enemy.melee,
 			this.enemy.ranged,
 			this.enemy.siege,
 			this.enemy.discard,
@@ -60,7 +51,7 @@ export class CardContainerManager {
 	public getPlayerContainers(): CardContainer[] {
 		return [
 			this.player.hand,
-			this.player.infantry,
+			this.player.melee,
 			this.player.ranged,
 			this.player.siege,
 			this.player.discard,
@@ -70,10 +61,19 @@ export class CardContainerManager {
 	public getEnemyContainers(): CardContainer[] {
 		return [
 			this.enemy.hand,
-			this.enemy.infantry,
+			this.enemy.melee,
 			this.enemy.ranged,
 			this.enemy.siege,
 			this.enemy.discard,
 		];
 	}
+}
+
+export interface PlayerContainers {
+	hand: CardContainer;
+	melee: CardContainer;
+	ranged: CardContainer;
+	siege: CardContainer;
+	discard: CardContainer;
+	deck: Deck;
 }

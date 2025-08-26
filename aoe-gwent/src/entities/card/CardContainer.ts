@@ -217,7 +217,7 @@ export class CardContainer extends PixiContainer {
 		const sourceScale = this.scale.x;
 		const targetScale = targetContainer.scale.x;
 
-		const baseCardScale = 0.5;
+		const baseCardScale = 1;
 		const visualSourceScale = baseCardScale * sourceScale;
 		const sceneScale = visualSourceScale;
 
