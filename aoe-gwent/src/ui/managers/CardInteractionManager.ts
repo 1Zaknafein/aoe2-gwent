@@ -169,6 +169,23 @@ export class CardInteractionManager {
 	private placeSelectedCard(targetContainer: any): void {
 		if (!this._selectedCard) return;
 
+		// Check if trying to place on enemy rows (Player 1 can only place on their own rows)
+		const enemyRows = [
+			this._cardContainers.enemy.melee,
+			this._cardContainers.enemy.ranged,
+			this._cardContainers.enemy.siege,
+		];
+
+		// Prevent placing cards on enemy rows.
+		if (enemyRows.includes(targetContainer)) {
+			return;
+		}
+
+		// Check if the target container can accept this card type
+		if (!targetContainer.canAcceptCard(this._selectedCard)) {
+			return;
+		}
+
 		const playerHand = this._cardContainers.player.hand;
 		const cardIndex = playerHand.getAllCards().indexOf(this._selectedCard);
 

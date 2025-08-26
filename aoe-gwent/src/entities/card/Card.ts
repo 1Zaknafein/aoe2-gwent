@@ -138,6 +138,9 @@ export enum CardType {
 	RANGED = "ranged",
 	SIEGE = "siege",
 	RANGED_MELEE = "ranged_melee", // Can be placed in either melee or ranged rows
+	WEATHER = "weather",
+	BOOST = "boost",
+	SPECIAL = "special",
 }
 
 export interface CardData {

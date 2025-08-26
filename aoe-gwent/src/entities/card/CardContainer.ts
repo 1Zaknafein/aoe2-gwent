@@ -1,6 +1,6 @@
 import { FederatedPointerEvent, Graphics } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
-import { Card, CardData } from "../card";
+import { Card, CardData, CardType } from "../card";
 import { gsap } from "gsap";
 
 export class CardContainer extends PixiContainer {
@@ -12,16 +12,19 @@ export class CardContainer extends PixiContainer {
 	private _debugRect: Graphics | null = null;
 	private _isContainerInteractive: boolean = false;
 	private _areCardsInteractive: boolean = true;
+	private _containerType: CardType | null = null;
 
 	/**
 	 * Create a new CardContainer.
 	 * @param maxWidth Maximum width of the container
 	 * @param label Label for the container.
+	 * @param containerType Optional type restriction for this container
 	 */
-	constructor(maxWidth: number, label: string) {
+	constructor(maxWidth: number, label: string, containerType?: CardType) {
 		super();
 		this._maxWidth = maxWidth;
 		this.label = label;
+		this._containerType = containerType || null;
 
 		this.createDebugRect();
 	}
@@ -47,6 +50,41 @@ export class CardContainer extends PixiContainer {
 	 */
 	public get activeTransferCount(): number {
 		return this._activeTransfers.size;
+	}
+
+	/**
+	 * Get the container type restriction.
+	 */
+	public get containerType(): CardType | null {
+		return this._containerType;
+	}
+
+	/**
+	 * Check if a card can be placed in this container based on type restrictions.
+	 */
+	public canAcceptCard(card: Card): boolean {
+		// No type restriction means any card can be placed
+		if (this._containerType === null) {
+			return true;
+		}
+
+		const cardType = card.cardData.type;
+
+		// Direct type match
+		if (cardType === this._containerType) {
+			return true;
+		}
+
+		// Special case: RANGED_MELEE cards can be placed in both MELEE and RANGED containers
+		if (
+			cardType === CardType.RANGED_MELEE &&
+			(this._containerType === CardType.MELEE ||
+				this._containerType === CardType.RANGED)
+		) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**

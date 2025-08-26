@@ -1,5 +1,6 @@
 import { CardContainer } from "./CardContainer";
 import { Deck } from "../deck";
+import { CardType } from "./Card";
 
 export class CardContainerManager {
 	public readonly player: PlayerContainers;
@@ -9,18 +10,18 @@ export class CardContainerManager {
 	constructor() {
 		this.player = {
 			hand: new CardContainer(1500, "player_hand"),
-			melee: new CardContainer(1300, "player_melee"),
-			ranged: new CardContainer(1300, "player_ranged"),
-			siege: new CardContainer(1300, "player_siege"),
+			melee: new CardContainer(1300, "player_melee", CardType.MELEE),
+			ranged: new CardContainer(1300, "player_ranged", CardType.RANGED),
+			siege: new CardContainer(1300, "player_siege", CardType.SIEGE),
 			discard: new CardContainer(120, "player_discard"),
 			deck: new Deck(),
 		};
 
 		this.enemy = {
 			hand: new CardContainer(1500, "enemy_hand"),
-			melee: new CardContainer(1300, "enemy_melee"),
-			ranged: new CardContainer(1300, "enemy_ranged"),
-			siege: new CardContainer(1300, "enemy_siege"),
+			melee: new CardContainer(1300, "enemy_melee", CardType.MELEE),
+			ranged: new CardContainer(1300, "enemy_ranged", CardType.RANGED),
+			siege: new CardContainer(1300, "enemy_siege", CardType.SIEGE),
 			discard: new CardContainer(120, "enemy_discard"),
 			deck: new Deck(),
 		};
