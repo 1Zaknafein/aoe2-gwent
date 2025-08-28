@@ -33,6 +33,7 @@ export class Card extends PixiContainer {
 		this._cardFace = PixiSprite.from(this._cardData.faceTexture);
 		this._cardFace.anchor.set(0.5);
 		this._cardFace.visible = true;
+		this._cardFace.scale.set(0.5);
 		this.addChild(this._cardFace);
 
 		this._scoreBackground = new PixiGraphics();
@@ -41,7 +42,7 @@ export class Card extends PixiContainer {
 		this._scoreBackground.lineTo(0, 0);
 		this._scoreBackground.fill({ color: "#6b0f18", alpha: 1.0 });
 
-		this._scoreBackground.x = -this._cardBack.width / 2 + 8;
+		this._scoreBackground.x = -this._cardBack.width / 2 + 7;
 		this._scoreBackground.y = -this._cardBack.height / 2 + 8;
 		this._scoreBackground.visible = true;
 		this.addChild(this._scoreBackground);
