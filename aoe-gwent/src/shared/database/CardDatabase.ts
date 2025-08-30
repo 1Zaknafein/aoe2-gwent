@@ -42,6 +42,24 @@ export class CardDatabase {
 				type: CardType.MELEE,
 			},
 		],
+		[
+			5,
+			{
+				name: "Teutonic Knight",
+				score: 10,
+				faceTexture: "teutonic_knight",
+				type: CardType.MELEE,
+			},
+		],
+		[
+			6,
+			{
+				name: "Archer",
+				score: 2,
+				faceTexture: "archer",
+				type: CardType.RANGED,
+			},
+		],
 	]);
 
 	/**

@@ -1,3 +1,4 @@
+import { AlphaFilter, Color, FillGradient } from "pixi.js";
 import {
 	PixiContainer,
 	PixiSprite,
@@ -14,10 +15,16 @@ export class Card extends PixiContainer {
 	private _scoreBackground!: PixiGraphics;
 	private _iconBackground!: PixiGraphics;
 	private _showingBack: boolean = false;
+	private _aaFilter: AlphaFilter;
 
 	constructor(cardData: CardData) {
 		super();
 		this._cardData = cardData;
+
+		this._aaFilter = new AlphaFilter({
+			antialias: true,
+			alpha: 1,
+		});
 
 		this.createCard();
 		this.interactive = true;
@@ -37,50 +44,62 @@ export class Card extends PixiContainer {
 		this.addChild(this._cardFace);
 
 		this._scoreBackground = new PixiGraphics();
-		this._scoreBackground.moveTo(0, 0);
-		this._scoreBackground.arc(0, 0, 50, 0, Math.PI / 2);
-		this._scoreBackground.lineTo(0, 0);
-		this._scoreBackground.fill({ color: "#6b0f18", alpha: 1.0 });
 
-		this._scoreBackground.x = -this._cardBack.width / 2 + 7;
-		this._scoreBackground.y = -this._cardBack.height / 2 + 8;
+		const radius = 25;
+
+		// Create radial gradient from bright yellow-orange center to darker orange edges
+		const gradient = new FillGradient(0, 0, 0, radius / 2)
+			.addColorStop(0, new Color("#00b6b3")) // Bright gold center
+			.addColorStop(1, new Color("#0079c0")); // Orange edges
+
+		this._scoreBackground.circle(0, 0, radius);
+		this._scoreBackground.fill(gradient);
+
+		// Add black outline
+		this._scoreBackground.circle(0, 0, radius);
+		this._scoreBackground.stroke({
+			color: 0x000000,
+			width: 3,
+			alpha: 1,
+		});
+
+		this._scoreBackground.x = -this._cardBack.width / 2 + 37;
+		this._scoreBackground.y = -this._cardBack.height / 2 + 37;
 		this._scoreBackground.visible = true;
 		this.addChild(this._scoreBackground);
+
+		this._scoreBackground.filters = [this._aaFilter];
 
 		this._scoreText = new PixiText({
 			text: this._cardData.score.toString(),
 			style: {
 				fontFamily: "Arial",
-				fontSize: 36,
+				fontSize: 34,
 				fontWeight: "bold",
-				fill: 0xffffff,
-				stroke: { color: 0x000000, width: 2 },
-				padding: 2,
+				fill: "#ffd500",
+				stroke: { color: "#000000", width: 1 },
+				dropShadow: {
+					distance: 2,
+					angle: 1.5,
+					blur: 2,
+					color: "#000000",
+					alpha: 1,
+				},
 			},
 		});
 
 		this._scoreText.anchor.set(0.5);
-		this._scoreText.x = -this._cardBack.width / 2 + 30;
-		this._scoreText.y = -this._cardBack.height / 2 + 30;
+		this._scoreText.x = this._scoreBackground.x;
+		this._scoreText.y = this._scoreBackground.y;
 		this._scoreText.visible = true;
 		this.addChild(this._scoreText);
 
-		this._iconBackground = new PixiGraphics();
-		this._iconBackground.moveTo(0, 0);
-		this._iconBackground.arc(0, 0, 50, Math.PI, Math.PI * 1.5);
-		this._iconBackground.lineTo(0, 0);
-		this._iconBackground.fill({ color: "#6b0f18" });
-		this._iconBackground.x = this._cardBack.width / 2 - 8;
-		this._iconBackground.y = this._cardBack.height / 2 - 8;
-		this._iconBackground.visible = true;
-		this.addChild(this._iconBackground);
-
 		const iconTexture = `icon_${this._cardData.type}`;
 		this._typeIcon = PixiSprite.from(iconTexture);
-		this._typeIcon.anchor.set(0.5, 0.5);
-		this._typeIcon.scale.set(1.0);
-		this._typeIcon.x = this._cardBack.width / 2 - 28;
-		this._typeIcon.y = this._cardBack.height / 2 - 30;
+		this._typeIcon.anchor.set(0.5);
+		this._typeIcon.scale.set(1.2);
+		this._typeIcon.x = (this._cardFace.width - this._typeIcon.width) / 2;
+		this._typeIcon.y = (this._cardFace.height - this._typeIcon.height) / 2;
 		this._typeIcon.visible = true;
 		this.addChild(this._typeIcon);
 	}
