@@ -1,7 +1,7 @@
 import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
 import { CardContainerManager } from "../../entities/card";
-import { Button, ScoreDisplay } from "../components";
+import { Button, ScoreDisplay, DebugPanel } from "../components";
 import { CardInteractionManager } from "../managers";
 import { CardDatabase } from "../../shared/database";
 import {
@@ -9,6 +9,8 @@ import {
 	PlayerDisplayManagerConfig,
 } from "../../entities/player";
 import { Sprite } from "pixi.js";
+import { GameController } from "../../shared/game";
+import type { GameState, EnemyCardPlacedEvent } from "../../shared/game";
 
 export class GameScene extends PixiContainer implements SceneInterface {
 	private _gameBoard: Sprite;
@@ -17,6 +19,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 	private _cardContainers: CardContainerManager;
 	private _cardInteractionManager: CardInteractionManager;
+	private _gameController: GameController;
 
 	private _multiTransferButton!: Button;
 	private _drawPlayerCardButton!: Button;
@@ -26,8 +29,8 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	private _enemyDeckIds: number[] = [];
 
 	private _scoreDisplay!: ScoreDisplay;
-
 	private _playerDisplayManager!: PlayerDisplayManager;
+	private _debugPanel!: DebugPanel;
 
 	constructor() {
 		super();
@@ -43,14 +46,22 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.addChild(this._gameBoard);
 
 		this._cardContainers = new CardContainerManager();
+
+		// Initialize game controller
+		this._gameController = new GameController(this._cardContainers);
+
 		this._cardInteractionManager = new CardInteractionManager(
-			this._cardContainers
+			this._cardContainers,
+			this._gameController
 		);
+
+		this.setupGameControllerEvents();
 
 		this.createCardContainers();
 		this.createScoreDisplaySystem();
 		this.createPlayerDisplaySystem();
 		this.createTestUI();
+		this.createDebugPanel();
 
 		this.resizeAndCenter(Manager.width, Manager.height);
 	}
@@ -240,6 +251,35 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this._drawEnemyCardButton.x = 200;
 		this._drawEnemyCardButton.y = 550;
 		this.addChild(this._drawEnemyCardButton);
+	}
+
+	private setupGameControllerEvents(): void {
+		// Listen for enemy actions
+		this._gameController.on("enemyCardPlaced", (data: EnemyCardPlacedEvent) => {
+			console.log("Enemy placed card:", data);
+		});
+
+		this._gameController.on("enemyPassedTurn", () => {
+			console.log("Enemy passed turn");
+		});
+
+		this._gameController.on("gameStateChanged", (gameState: GameState) => {
+			console.log("Game state changed in scene:", gameState);
+		});
+
+		// Try to connect to server (will fail gracefully for now)
+		this._gameController.connectToServer().then((connected) => {
+			if (connected) {
+				console.log("Connected to game server");
+			} else {
+				console.log("Could not connect to server - using debug mode");
+			}
+		});
+	}
+
+	private createDebugPanel(): void {
+		this._debugPanel = new DebugPanel(this._gameController.gameStateManager);
+		this.addChild(this._debugPanel);
 	}
 
 	private async drawPlayerCard(): Promise<void> {

@@ -1,5 +1,6 @@
 import { Card, CardContainerManager } from "../../entities/card";
 import { gsap } from "gsap";
+import { GameController } from "../../shared/game";
 
 export class CardInteractionManager {
 	private _cardContainers: CardContainerManager;
@@ -7,9 +8,14 @@ export class CardInteractionManager {
 	private _cardClickInProgress: boolean = false;
 	private _lastClickTime: number = 0;
 	private _lastClickedCard: Card | null = null;
+	private _gameController?: GameController;
 
-	constructor(cardContainers: CardContainerManager) {
+	constructor(
+		cardContainers: CardContainerManager,
+		gameController?: GameController
+	) {
 		this._cardContainers = cardContainers;
+		this._gameController = gameController;
 	}
 
 	public setupContainerInteractivity(): void {
@@ -191,9 +197,63 @@ export class CardInteractionManager {
 
 		if (cardIndex === -1) return;
 
+		// Determine target row name
+		let targetRowName: "melee" | "ranged" | "siege" | null = null;
+		if (targetContainer === this._cardContainers.player.melee) {
+			targetRowName = "melee";
+		} else if (targetContainer === this._cardContainers.player.ranged) {
+			targetRowName = "ranged";
+		} else if (targetContainer === this._cardContainers.player.siege) {
+			targetRowName = "siege";
+		}
+
+		// Send action to server if game controller is available and it's player's turn
+		if (
+			this._gameController &&
+			targetRowName &&
+			this._gameController.isPlayerTurn
+		) {
+			// Get card data for the ID (we'll need to find the card ID)
+			const cardData = this._selectedCard.cardData;
+			// Find the card ID from the database - this is a simplified approach
+			// In a real implementation, cards would have IDs stored with them
+			const cardId = this.findCardIdByData(cardData);
+
+			if (cardId) {
+				this._gameController
+					.sendPlayerAction(cardId, targetRowName)
+					.then(() => {
+						console.log("Player action sent to server");
+					})
+					.catch((error) => {
+						console.error("Failed to send player action:", error);
+					});
+			}
+		}
+
+		// Perform the card transfer
 		playerHand.transferCardTo(cardIndex, targetContainer);
 
 		this._selectedCard = null;
+	}
+
+	/**
+	 * Helper method to find card ID by card data
+	 * This is a simplified approach - in a real implementation,
+	 * cards would store their IDs directly
+	 */
+	private findCardIdByData(cardData: any): number | null {
+		// This is a simple lookup - in practice you'd want a more robust solution
+		const cardNames = {
+			Knight: 1,
+			Crossbowman: 2,
+			Mangonel: 3,
+			"Light Cavalry": 4,
+			"Teutonic Knight": 5,
+			Archer: 6,
+		};
+
+		return cardNames[cardData.name as keyof typeof cardNames] || null;
 	}
 
 	public get selectedCard(): Card | null {
