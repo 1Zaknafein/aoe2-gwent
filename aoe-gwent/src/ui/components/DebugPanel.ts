@@ -244,7 +244,11 @@ Enemy Passed: ${gameState.enemyPassed}`;
 			// playerDeck: NOT SENT - server keeps deck cards secret
 			gameState: {
 				...this._gameStateManager.gameState,
-				phase: GamePhase.PLAYER_TURN, // Game starts when cards are distributed
+				phase:
+					startingPlayer === "player"
+						? GamePhase.PLAYER_TURN
+						: GamePhase.ENEMY_TURN,
+				currentTurn: startingPlayer, // Set the current turn to match starting player
 				startingPlayer: startingPlayer,
 				playerHandSize: initialHandSize,
 				enemyHandSize: initialHandSize,
