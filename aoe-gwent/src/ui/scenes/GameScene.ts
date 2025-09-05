@@ -1,7 +1,12 @@
 import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
 import { CardContainerManager } from "../../entities/card";
-import { Button, ScoreDisplay, DebugPanel } from "../components";
+import {
+	Button,
+	ScoreDisplay,
+	DebugPanel,
+	MessageDisplay,
+} from "../components";
 import { CardInteractionManager } from "../managers";
 import { CardDatabase } from "../../shared/database";
 import {
@@ -31,6 +36,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	private _scoreDisplay!: ScoreDisplay;
 	private _playerDisplayManager!: PlayerDisplayManager;
 	private _debugPanel!: DebugPanel;
+	private _messageDisplay!: MessageDisplay;
 
 	constructor() {
 		super();
@@ -61,6 +67,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.createScoreDisplaySystem();
 		this.createPlayerDisplaySystem();
 		this.createDebugPanel();
+		this.createMessageDisplay();
 
 		this.resizeAndCenter(Manager.width, Manager.height);
 	}
@@ -205,13 +212,13 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	private setupGameControllerEvents(): void {
-		// Listen for enemy actions
 		this._gameController.on("enemyCardPlaced", (data: EnemyCardPlacedEvent) => {
 			console.log("Enemy placed card:", data);
 		});
 
 		this._gameController.on("enemyPassedTurn", () => {
 			console.log("Enemy passed turn");
+			this.showMessage("Enemy passed their turn");
 		});
 
 		this._gameController.on("gameStateChanged", (gameState: GameState) => {
@@ -222,8 +229,10 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this._gameController.connectToServer().then((connected) => {
 			if (connected) {
 				console.log("Connected to game server");
+				this.showMessage("Connected to game server!");
 			} else {
 				console.log("Could not connect to server - using debug mode");
+				this.showMessage("Running in debug mode");
 			}
 		});
 	}
@@ -231,6 +240,26 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	private createDebugPanel(): void {
 		this._debugPanel = new DebugPanel(this._gameController.gameStateManager);
 		this.addChild(this._debugPanel);
+	}
+
+	private createMessageDisplay(): void {
+		this._messageDisplay = new MessageDisplay({
+			width: 500,
+			height: 100,
+			fontSize: 20,
+			backgroundColor: "#000000",
+			textColor: "#ffffff",
+		});
+
+		// Position the message display at the center of the screen
+		this._messageDisplay.centerOn(Manager.width, Manager.height);
+
+		// Initially hidden
+		this._messageDisplay.visible = false;
+		this._messageDisplay.alpha = 0;
+
+		// Add to the scene (on top of everything else)
+		this.addChild(this._messageDisplay);
 	}
 
 	private async drawPlayerCard(): Promise<void> {
@@ -298,6 +327,13 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		}
 	}
 
+	/**
+	 * Show a message to the user
+	 */
+	public showMessage(message: string): void {
+		this._messageDisplay.showMessage(message);
+	}
+
 	private resizeAndCenter(screenWidth: number, screenHeight: number): void {
 		const scaleX = screenWidth / this._originalBoardWidth;
 		const scaleY = screenHeight / this._originalBoardHeight;
@@ -314,5 +350,10 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 	resize(width: number, height: number): void {
 		this.resizeAndCenter(width, height);
+
+		// Update message display position
+		if (this._messageDisplay) {
+			this._messageDisplay.centerOn(width, height);
+		}
 	}
 }
