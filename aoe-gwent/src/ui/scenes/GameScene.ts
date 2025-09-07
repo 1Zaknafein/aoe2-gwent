@@ -205,7 +205,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			// Show initial turn message
 			const turnMessage =
 				gameState.currentTurn === "player" ? "Your turn!" : "Opponent's turn!";
-			this.showDelayedMessage(turnMessage, 1000);
+			this.showDelayedMessage(turnMessage, 2500);
 		});
 
 		// Listen for action blocking/unblocking events
