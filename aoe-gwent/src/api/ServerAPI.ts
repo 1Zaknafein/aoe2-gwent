@@ -14,6 +14,7 @@ interface FakeServerState {
 	gameState: GameState;
 	playerDeck: number[];
 	enemyDeck: number[];
+	enemyHand: number[];
 	playerBoard: { melee: number[]; ranged: number[]; siege: number[] };
 	enemyBoard: { melee: number[]; ranged: number[]; siege: number[] };
 	isGameStarted: boolean;
@@ -121,6 +122,10 @@ export class ServerAPI {
 		const playerDeck = generateDeck(10);
 		const enemyDeck = generateDeck(10);
 
+		// Deal initial hands
+		const enemyHand = enemyDeck.slice(0, 5); // Enemy gets first 5 cards
+		const remainingEnemyDeck = enemyDeck.slice(5); // Rest stays in deck
+
 		this._fakeServerState = {
 			gameState: {
 				phase: GamePhase.PLAYER_TURN,
@@ -135,7 +140,8 @@ export class ServerAPI {
 				enemyHandSize: 5,
 			},
 			playerDeck: playerDeck,
-			enemyDeck: enemyDeck,
+			enemyDeck: remainingEnemyDeck,
+			enemyHand: enemyHand,
 			playerBoard: { melee: [], ranged: [], siege: [] },
 			enemyBoard: { melee: [], ranged: [], siege: [] },
 			isGameStarted: false,
@@ -153,7 +159,16 @@ export class ServerAPI {
 	 * Start the fake game and send initial deck data
 	 */
 	private startFakeGame(): void {
-		if (!this._fakeServerState || !this._messageListener) return;
+		console.log("[ServerAPI] startFakeGame called");
+		console.log("[ServerAPI] _fakeServerState:", this._fakeServerState);
+		console.log("[ServerAPI] _messageListener:", this._messageListener);
+
+		if (!this._fakeServerState || !this._messageListener) {
+			console.warn(
+				"[ServerAPI] Missing fakeServerState or messageListener, cannot start game"
+			);
+			return;
+		}
 
 		// Set correct phase based on starting player
 		this._fakeServerState.gameState.phase =
@@ -166,32 +181,27 @@ export class ServerAPI {
 
 		// Send deck data with initial hands
 		const playerHand = this._fakeServerState.playerDeck.slice(0, 5);
+		console.log(
+			"[ServerAPI] Preparing to send deck_data with playerHand:",
+			playerHand
+		);
 
 		setTimeout(() => {
 			if (this._messageListener && this._fakeServerState) {
-				this._messageListener({
-					type: "deck_data",
+				const responseData = {
+					type: "deck_data" as const,
 					playerHand: playerHand,
 					gameState: { ...this._fakeServerState.gameState },
-				});
+				};
+				console.log("[ServerAPI] Sending deck_data response:", responseData);
+				this._messageListener(responseData);
+			} else {
+				console.warn(
+					"[ServerAPI] Lost messageListener or fakeServerState during timeout"
+				);
 			}
 		}, 200);
 	}
-
-	/**
-	 * TODO: Automatic game start function
-	 * This will be called automatically when both players join
-	 * Currently unused - game starts via debug button
-	 */
-	// private async autoStartGame(): Promise<void> {
-	// 	// TODO: Implement automatic game start
-	// 	// - Wait for both players to connect
-	// 	// - Select random starting player
-	// 	// - Initialize game state
-	// 	// - Send deck data to both players
-	// 	console.log("Auto-starting game with random player selection");
-	// 	await this.requestGameStart();
-	// }
 
 	/**
 	 * Disconnect from server
@@ -329,12 +339,15 @@ export class ServerAPI {
 	private executeEnemyCardPlay(): void {
 		if (!this._fakeServerState || !this._messageListener) return;
 
-		// Pick random card from enemy deck
-		const availableCards = this._fakeServerState.enemyDeck.slice(0, 5); // Enemy hand size
-		if (availableCards.length === 0) return;
+		// Pick random card from enemy hand
+		const enemyHand = this._fakeServerState.enemyHand;
+		if (enemyHand.length === 0) {
+			console.warn("Enemy has no cards in hand to play");
+			return;
+		}
 
-		const randomCard =
-			availableCards[Math.floor(Math.random() * availableCards.length)];
+		const randomCardIndex = Math.floor(Math.random() * enemyHand.length);
+		const randomCard = enemyHand[randomCardIndex];
 		const cardData = CardDatabase.getCardById(randomCard);
 
 		// Pick appropriate row based on card type
@@ -360,11 +373,12 @@ export class ServerAPI {
 		// Add card to enemy board
 		this._fakeServerState.enemyBoard[targetRow].push(randomCard);
 
-		// Remove card from enemy deck
-		const cardIndex = this._fakeServerState.enemyDeck.indexOf(randomCard);
-		if (cardIndex > -1) {
-			this._fakeServerState.enemyDeck.splice(cardIndex, 1);
-		}
+		// Remove card from enemy hand
+		this._fakeServerState.enemyHand.splice(randomCardIndex, 1);
+
+		// Update enemy hand size in game state
+		this._fakeServerState.gameState.enemyHandSize =
+			this._fakeServerState.enemyHand.length;
 
 		console.log(
 			`Fake server: Enemy played card ${randomCard} on ${targetRow} row`
@@ -410,7 +424,17 @@ export class ServerAPI {
 		this._fakeServerState.gameState.enemyPassed = true;
 		console.log("Fake server: Enemy passed");
 
-		// Send enemy pass action
+		// Check if player has also passed
+		if (this._fakeServerState.gameState.playerPassed) {
+			// Both passed, end round
+			this.checkRoundEnd();
+		} else {
+			// Switch turn back to player
+			this._fakeServerState.gameState.currentTurn = "player";
+			this._fakeServerState.gameState.phase = GamePhase.PLAYER_TURN;
+		}
+
+		// Send single enemy action with updated game state
 		this._messageListener({
 			type: "enemy_action",
 			action: {
@@ -420,14 +444,7 @@ export class ServerAPI {
 			gameState: { ...this._fakeServerState.gameState },
 		});
 
-		// Check if player has also passed
-		if (this._fakeServerState.gameState.playerPassed) {
-			// Both passed, end round
-			this.checkRoundEnd();
-		} else {
-			// Switch turn back to player
-			this.switchTurnToPlayer();
-		}
+		console.log("Fake server: Enemy passed, turn switched to player");
 	}
 
 	/**
@@ -616,7 +633,6 @@ export class ServerAPI {
 			return;
 		}
 
-		console.log("Debug: Forcing enemy card play");
 		this.executeEnemyCardPlay();
 	}
 

@@ -1,6 +1,6 @@
 import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
-import { CardContainerManager } from "../../entities/card";
+import { CardContainerManager, CardType } from "../../entities/card";
 import { ScoreDisplay, DebugPanel, MessageDisplay } from "../components";
 import { CardInteractionManager } from "../managers";
 import {
@@ -10,7 +10,8 @@ import {
 import { Sprite } from "pixi.js";
 import { GameController } from "../../shared/game";
 import type { EnemyCardPlacedEvent } from "../../shared/game";
-import { GamePhase, GameState } from "../../shared/game/GameStateManager";
+import { GamePhase, GameState } from "../../shared/game/GameFlowManager";
+import { CardDatabase } from "../../shared/database";
 
 export class GameScene extends PixiContainer implements SceneInterface {
 	private _gameBoard: Sprite;
@@ -31,7 +32,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.interactive = true;
 
 		this._gameBoard = PixiSprite.from("background");
-
 		this._gameBoard.label = "game_board";
 
 		this._originalBoardWidth = this._gameBoard.width;
@@ -41,7 +41,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this._cardContainers = new CardContainerManager();
 
-		// Initialize game controller
 		this._gameController = new GameController(this._cardContainers);
 
 		this._cardInteractionManager = new CardInteractionManager(
@@ -57,7 +56,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.createDebugPanel();
 		this.createMessageDisplay();
 
-		// Set up message callback for GameController
 		this._gameController.setMessageCallback(this.showMessageAsync.bind(this));
 
 		this.resizeAndCenter(Manager.width, Manager.height);
@@ -192,51 +190,40 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			console.log("Enemy placed card:", data);
 		});
 
-		this._gameController.on("enemyPassedTurn", () => {
-			console.log("Enemy passed turn");
-			this.showMessage("Opponent passed");
-		});
+		this._gameController.on("flowStateChanged", (data) => {
+			const { gameState } = data;
 
-		// Listen for game started event
-		this._gameController.on("gameStarted", () => {
-			const gameState = this._gameController.gameState;
-			this.showMessage(`Round ${gameState.roundNumber} is starting...`);
-
-			// Show initial turn message
-			const turnMessage =
-				gameState.currentTurn === "player" ? "Your turn!" : "Opponent's turn!";
-			this.showDelayedMessage(turnMessage, 2500);
-		});
-
-		// Listen for action blocking/unblocking events
-		this._gameController.on("actionsBlocked", () => {
 			this._cardInteractionManager.updateCardInteractivity();
-		});
 
-		this._gameController.on("actionsUnblocked", () => {
-			this._cardInteractionManager.updateCardInteractivity();
-		});
-
-		// Listen for game state changes to detect turn switches and round end
-		this._gameController.on("gameStateChanged", (gameState) => {
 			this.handleGameStateChange(gameState);
 		});
 
-		// Try to connect to server (will fail gracefully for now)
+		// Listen for deck data (game start)
+		this._gameController.on("deckDataReceived", (data) => {
+			this.setupInitialCards(data);
+		});
+
+		// Listen for connection status
+		this._gameController.on("connectionStatusChanged", (connected) => {
+			if (connected) {
+				console.log("Connected to server");
+			} else {
+				console.log("Running in debug mode");
+				this.showMessage("Running in debug mode");
+			}
+		});
+
+		// Try to connect to server
 		this._gameController.connectToServer().then((connected) => {
 			if (connected) {
 				console.log("Connected to game server");
 			} else {
 				console.log("Could not connect to server - using debug mode");
-				this.showMessage("Running in debug mode");
 			}
 		});
 	}
 
 	private handleGameStateChange(gameState: GameState): void {
-		// Messages are now handled in GameStateManager before this is called
-		// Just handle any UI updates that don't involve messages
-
 		// Update card interactivity based on new game state
 		this._cardInteractionManager.updateCardInteractivity();
 
@@ -246,14 +233,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	private handleRoundEnd(gameState: GameState): void {
-		// Round end message is now handled in GameStateManager
-		// Just handle any UI-specific round end logic here if needed
-		console.log(
-			"Round ended, final scores:",
-			gameState.playerScore,
-			"vs",
-			gameState.enemyScore
-		);
+		//TODO Handle any UI-specific round end logic here if needed
 	}
 
 	private createDebugPanel(): void {
@@ -275,7 +255,6 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this._messageDisplay.visible = false;
 		this._messageDisplay.alpha = 0;
 
-		// Add to the scene (on top of everything else)
 		this.addChild(this._messageDisplay);
 	}
 
@@ -294,23 +273,12 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	public showMessageAsync(message: string): Promise<void> {
 		return new Promise((resolve) => {
 			if (this._messageDisplay) {
-				// Block actions while showing message
-				if (this._gameController) {
-					this._gameController.manuallyBlockActions();
-				}
-
 				this._messageDisplay.showMessage(message);
 				// MessageDisplay shows for 2.5s total (0.5s fade in + 1.5s display + 0.5s fade out)
 				setTimeout(() => {
-					// Unblock actions when message is done
-					if (this._gameController) {
-						this._gameController.manuallyUnblockActions();
-					}
-
 					resolve();
 				}, 2500);
 			} else {
-				// No message display available, resolve immediately
 				resolve();
 			}
 		});
@@ -335,6 +303,63 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this._gameBoard.x = (screenWidth - this._gameBoard.width) / 2;
 		this._gameBoard.y = (screenHeight - this._gameBoard.height) / 2;
+	}
+
+	/**
+	 * Set up initial cards when game starts
+	 */
+	private setupInitialCards(data: any): void {
+		if (data.playerHand && Array.isArray(data.playerHand)) {
+			const playerHand = this._cardContainers.player.hand;
+
+			playerHand.removeAllCards();
+
+			// Convert card IDs to card data objects
+			const cardDataArray = data.playerHand
+				.map((cardId: number) => {
+					const cardData = CardDatabase.getCardById(cardId);
+					if (!cardData) {
+						console.error(
+							`[GameScene] Card with ID ${cardId} not found in database`
+						);
+						return null;
+					}
+					return cardData;
+				})
+				.filter((cardData: any) => cardData !== null);
+
+			playerHand.addCardsBatch(cardDataArray);
+		} else {
+			console.warn(
+				"[GameScene] No playerHand data found or data is not an array:",
+				data.playerHand
+			);
+		}
+		if (data.enemyHandSize) {
+			const enemyHand = this._cardContainers.enemy.hand;
+
+			enemyHand.removeAllCards();
+
+			// Create dummy cards (card backs) for enemy
+			const dummyCards = [];
+			for (let i = 0; i < data.enemyHandSize; i++) {
+				// Use a dummy card data - enemy cards are shown as card backs
+				const dummyCardData = {
+					id: 1000 + i, // Use high IDs for dummy cards
+					name: "Enemy Card",
+					faceTexture: "archer",
+					score: 1,
+					type: CardType.MELEE,
+				};
+				dummyCards.push(dummyCardData);
+			}
+
+			enemyHand.addCardsBatch(dummyCards);
+
+			enemyHand.getAllCards().forEach((card) => {
+				card.showBack();
+			});
+		}
 	}
 
 	update(_framesPassed: number): void {}

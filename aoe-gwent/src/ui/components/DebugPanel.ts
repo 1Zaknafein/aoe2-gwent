@@ -1,20 +1,11 @@
 import { PixiContainer, PixiSprite, PixiText } from "../../plugins/engine";
 import { DebugButton } from "../components";
-import {
-	GameStateManager,
-	GamePhase,
-	ActionType,
-	ServerResponse,
-} from "../../shared/game/GameStateManager";
-import { CardDatabase } from "../../shared/database";
-import { CardType } from "../../entities/card";
-import { GameController } from "../../shared/game/GameController";
+import { GameController } from "../../shared/game";
 
 /**
- * Debug panel for testing server communication and enemy actions
+ * Debug Panel for testing game functionality with fake server
  */
 export class DebugPanel extends PixiContainer {
-	private _gameStateManager: GameStateManager;
 	private _gameController: GameController;
 	private _isVisible: boolean = false;
 
@@ -24,17 +15,15 @@ export class DebugPanel extends PixiContainer {
 	private _enemyPlaceCardButton!: DebugButton;
 	private _enemyPassTurnButton!: DebugButton;
 	private _startGameButton!: DebugButton;
-	private _switchTurnButton!: DebugButton;
 	private _statusText!: PixiText;
 
 	// Panel properties
 	private readonly PANEL_WIDTH = 350;
-	private readonly PANEL_HEIGHT = 420; // Increased to accommodate all elements
+	private readonly PANEL_HEIGHT = 420;
 
 	constructor(gameController: GameController) {
 		super();
 		this._gameController = gameController;
-		this._gameStateManager = gameController.gameStateManager;
 
 		this.createToggleButton();
 		this.createDebugPanel();
@@ -43,267 +32,118 @@ export class DebugPanel extends PixiContainer {
 	}
 
 	private createToggleButton(): void {
-		this._toggleButton = new DebugButton(
-			"Debug Panel",
-			() => this.togglePanel(),
-			120,
-			30
-		);
-		this._toggleButton.x = 10;
-		this._toggleButton.y = 10;
+		this._toggleButton = new DebugButton("Debug", () => {
+			this.toggleVisibility();
+		});
+		this._toggleButton.position.set(10, 10);
 		this.addChild(this._toggleButton);
 	}
 
 	private createDebugPanel(): void {
-		// Create background
-		this._background = new PixiSprite();
+		this._background = PixiSprite.from("rgba(0,0,0,0.8)");
 		this._background.width = this.PANEL_WIDTH;
 		this._background.height = this.PANEL_HEIGHT;
-		this._background.tint = 0x000000;
-		this._background.alpha = 0.8;
-		this._background.x = 10;
-		this._background.y = 50;
+		this._background.position.set(10, 50);
 		this.addChild(this._background);
 
-		// Create title
-		const title = new PixiText({
-			text: "Debug Panel",
-			style: {
-				fontFamily: "Arial",
-				fontSize: 18,
-				fill: 0xffffff,
-				fontWeight: "bold",
-			},
+		this._statusText = new PixiText("Status: Initializing...", {
+			fontFamily: "Arial",
+			fontSize: 14,
+			fill: 0xffffff,
+			wordWrap: true,
+			wordWrapWidth: this.PANEL_WIDTH - 20,
 		});
-		title.x = 20;
-		title.y = 60;
-		this.addChild(title);
-
-		// Create status text
-		this._statusText = new PixiText({
-			text: "Status: Waiting for game start",
-			style: {
-				fontFamily: "Arial",
-				fontSize: 10,
-				fill: 0xffffff,
-				wordWrap: true,
-				wordWrapWidth: this.PANEL_WIDTH - 20,
-			},
-		});
-		this._statusText.x = 20;
-		this._statusText.y = 90;
+		this._statusText.position.set(20, 60);
 		this.addChild(this._statusText);
 
-		this._startGameButton = new DebugButton(
-			"Start (Player)",
-			() => this.simulateGameStart("player"),
-			150,
-			30
-		);
-		this._startGameButton.x = 20;
-		this._startGameButton.y = 200;
+		this._startGameButton = new DebugButton("Start Game", () => {
+			this.startGameWithRandomPlayer();
+		});
+		this._startGameButton.position.set(20, 220);
 		this.addChild(this._startGameButton);
 
-		const startGameEnemyButton = new DebugButton(
-			"Start (Enemy)",
-			() => this.simulateGameStart("enemy"),
-			150,
-			30
-		);
-		startGameEnemyButton.x = 180;
-		startGameEnemyButton.y = 200;
-		this.addChild(startGameEnemyButton);
-
-		this._enemyPlaceCardButton = new DebugButton(
-			"Enemy Place Card",
-			() => this.simulateEnemyPlaceCard(),
-			150,
-			30
-		);
-		this._enemyPlaceCardButton.x = 180;
-		this._enemyPlaceCardButton.y = 240;
+		this._enemyPlaceCardButton = new DebugButton("Enemy Place Card", () => {
+			this.simulateEnemyPlaceCard();
+		});
+		this._enemyPlaceCardButton.position.set(20, 270);
 		this.addChild(this._enemyPlaceCardButton);
 
-		this._enemyPassTurnButton = new DebugButton(
-			"Enemy Pass Turn",
-			() => this.simulateEnemyPassTurn(),
-			150,
-			30
-		);
-		this._enemyPassTurnButton.x = 20;
-		this._enemyPassTurnButton.y = 240;
+		this._enemyPassTurnButton = new DebugButton("Enemy Pass Turn", () => {
+			this.simulateEnemyPassTurn();
+		});
+		this._enemyPassTurnButton.position.set(20, 320);
 		this.addChild(this._enemyPassTurnButton);
 	}
 
 	private setupEventListeners(): void {
-		this._gameStateManager.on("gameStateChanged", (gameState) => {
-			this.updateStatusText(gameState);
+		this._gameController.on("flowStateChanged", () => {
+			this.updateStatusText();
 		});
 
-		this._gameStateManager.on("gameStarted", (gameState) => {
-			this.updateStatusText(gameState);
+		this._gameController.on("gameStarted", () => {
+			this.updateStatusText();
 		});
 
-		this._gameStateManager.on("phaseChanged", (phase) => {
-			console.log("Debug Panel: Game phase changed to", phase);
+		this._gameController.on("deckDataReceived", () => {
+			this.updateStatusText();
 		});
 
-		// Update status text with initial state
-		this.updateStatusText(this._gameStateManager.gameState);
+		this.updateStatusText();
 	}
 
-	private updateStatusText(gameState: any): void {
-		const status = `Phase: ${gameState.phase}
+	private updateStatusText(): void {
+		const isConnected = this._gameController?.serverAPI?.isConnected || false;
+		const flowState = this._gameController.currentFlowState;
+		const gameState = this._gameController.gameState;
+
+		const statusText = `Status: ${isConnected ? "Connected" : "Disconnected"}
+Flow State: ${flowState}
 Turn: ${gameState.currentTurn}
+Phase: ${gameState.phase}
 Round: ${gameState.roundNumber}
-Starting Player: ${gameState.startingPlayer}
 Player Score: ${gameState.playerScore}
 Enemy Score: ${gameState.enemyScore}
-Player Passed: ${gameState.playerPassed}
-Enemy Passed: ${gameState.enemyPassed}`;
+Can Player Act: ${this._gameController.canPlayerAct}`;
 
-		this._statusText.text = status;
+		this._statusText.text = statusText;
 	}
 
-	private togglePanel(): void {
+	private updatePanelVisibility(): void {
+		this._background.visible = this._isVisible;
+		this._statusText.visible = this._isVisible;
+		this._startGameButton.visible = this._isVisible;
+		this._enemyPlaceCardButton.visible = this._isVisible;
+		this._enemyPassTurnButton.visible = this._isVisible;
+	}
+
+	private toggleVisibility(): void {
 		this._isVisible = !this._isVisible;
 		this.updatePanelVisibility();
 	}
 
-	private updatePanelVisibility(): void {
-		const children = this.children.filter(
-			(child) => child !== this._toggleButton
-		);
-		children.forEach((child) => {
-			child.visible = this._isVisible;
-		});
-	}
-
-	private simulateGameStart(startingPlayer: "player" | "enemy"): void {
+	private async startGameWithRandomPlayer(): Promise<void> {
 		const serverAPI = this._gameController.serverAPI;
+		const startingPlayer = Math.random() < 0.5 ? "player" : "enemy";
 
-		if (!serverAPI.isConnected) {
-			console.warn("Debug Panel: Server not connected");
-			return;
+		try {
+			await serverAPI.connect();
+			await serverAPI.requestGameStart(startingPlayer);
+		} catch (error) {
+			console.error("Failed to start game:", error);
 		}
-
-		serverAPI.requestGameStart(startingPlayer);
-	}
-
-	private switchTurn(): void {
-		const currentState = this._gameStateManager.gameState;
-		const newTurn = currentState.currentTurn === "player" ? "enemy" : "player";
-		const newPhase =
-			newTurn === "player" ? GamePhase.PLAYER_TURN : GamePhase.ENEMY_TURN;
-
-		const updateResponse: ServerResponse = {
-			type: "game_state_update",
-			gameState: {
-				...currentState,
-				currentTurn: newTurn,
-				phase: newPhase,
-			},
-		};
-
-		this._gameStateManager.handleServerResponse(updateResponse);
 	}
 
 	private simulateEnemyPlaceCard(): void {
-		// Use the fake server to trigger enemy action instead of bypassing it
+		console.log("Debug: Simulating enemy place card action");
+
+		// Simply trigger the server-side enemy action
+		// The server will handle card selection and placement logic
 		const serverAPI = this._gameController.serverAPI;
-
-		if (!serverAPI.isConnected) {
-			console.warn("Debug Panel: Server not connected");
-			return;
-		}
-
-		const serverState = serverAPI.debugServerState;
-		if (!serverState || !serverState.isGameStarted) {
-			console.warn("Debug Panel: Game not started");
-			return;
-		}
-
-		if (serverState.gameState.currentTurn !== "enemy") {
-			console.warn("Debug Panel: Not enemy's turn");
-			return;
-		}
-
 		serverAPI.debugForceEnemyAction();
-	}
-
-	private simulateEnemyPlaceSpecificCard(
-		targetRow: "melee" | "ranged" | "siege",
-		cardId?: number
-	): void {
-		// If no cardId provided, find a card of the correct type
-		if (!cardId) {
-			const cardTypeMap = {
-				melee: CardType.MELEE,
-				ranged: CardType.RANGED,
-				siege: CardType.SIEGE,
-			};
-
-			// Find a card of the correct type
-			for (let id = 1; id <= 6; id++) {
-				const cardData = CardDatabase.getCardById(id);
-				if (cardData && cardData.type === cardTypeMap[targetRow]) {
-					cardId = id;
-					break;
-				}
-			}
-		}
-
-		if (!cardId) {
-			console.error(
-				"Debug Panel: Could not find suitable card for row",
-				targetRow
-			);
-			return;
-		}
-
-		const enemyActionResponse: ServerResponse = {
-			type: "enemy_action",
-			action: {
-				type: ActionType.PLACE_CARD,
-				cardId: cardId,
-				targetRow: targetRow,
-				playerId: "enemy",
-			},
-			gameState: {
-				...this._gameStateManager.gameState,
-			},
-		};
-
-		console.log(
-			`Debug Panel: Enemy placing card ${cardId} on ${targetRow} row`
-		);
-		this._gameStateManager.handleServerResponse(enemyActionResponse);
 	}
 
 	private simulateEnemyPassTurn(): void {
 		const serverAPI = this._gameController.serverAPI;
-
-		if (!serverAPI.isConnected) {
-			console.warn("Debug Panel: Server not connected");
-			return;
-		}
-
-		const serverState = serverAPI.debugServerState;
-		if (!serverState || !serverState.isGameStarted) {
-			console.warn("Debug Panel: Game not started");
-			return;
-		}
-
-		if (serverState.gameState.currentTurn !== "enemy") {
-			console.warn("Debug Panel: Not enemy's turn");
-			return;
-		}
-
 		serverAPI.debugForceEnemyPass();
-	}
-
-	public setPosition(x: number, y: number): void {
-		this.x = x;
-		this.y = y;
 	}
 }

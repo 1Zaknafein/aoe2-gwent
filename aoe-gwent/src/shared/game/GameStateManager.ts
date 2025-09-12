@@ -22,9 +22,9 @@ export interface GameState {
 	enemyScore: number;
 	playerPassed: boolean;
 	enemyPassed: boolean;
-	startingPlayer: "player" | "enemy"; // Who started this round/game
-	playerHandSize: number; // Number of cards in player hand
-	enemyHandSize: number; // Number of cards in enemy hand
+	startingPlayer: "player" | "enemy";
+	playerHandSize: number;
+	enemyHandSize: number;
 }
 
 export interface ServerResponse {
@@ -36,8 +36,7 @@ export interface ServerResponse {
 		targetRow?: "melee" | "ranged" | "siege";
 		playerId: "player" | "enemy";
 	};
-	// playerDeck removed - server keeps deck cards hidden from client
-	playerHand?: number[]; // Array of card IDs for player's initial hand only
+	playerHand?: number[];
 }
 
 export interface PlayerAction {

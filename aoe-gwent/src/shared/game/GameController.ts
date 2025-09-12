@@ -1,89 +1,228 @@
 import { EventEmitter } from "pixi.js";
-import { GameStateManager, ActionType, GamePhase } from "./GameStateManager";
+import { GameFlowManager, GameFlowState } from "./GameFlowManager";
 import { ServerAPI } from "../../api/ServerAPI";
 import { CardContainer, CardContainerManager } from "../../entities/card";
 import { CardDatabase } from "../../shared/database";
-import { CardData, CardType } from "../../entities/card";
+import { CardData } from "../../entities/card";
 
-// Event type definitions for GameController
 export interface EnemyCardPlacedEvent {
 	cardData: CardData;
 	targetRow: "melee" | "ranged" | "siege";
-	container: CardContainer;
 }
 
-/**
- * Central game controller that handles game logic and coordinates between
- * UI components, server communication, and game state
- */
 export class GameController extends EventEmitter {
-	private _gameStateManager: GameStateManager;
+	private _gameFlowManager: GameFlowManager;
 	private _serverAPI: ServerAPI;
 	private _cardContainers: CardContainerManager;
-	private _actionsBlocked: boolean = false;
 
 	constructor(cardContainers: CardContainerManager) {
 		super();
 
 		this._cardContainers = cardContainers;
-		this._gameStateManager = new GameStateManager();
+		this._gameFlowManager = new GameFlowManager();
 		this._serverAPI = new ServerAPI();
-		this._actionsBlocked = true;
 
 		this.setupEventListeners();
 	}
 
-	private setupEventListeners(): void {
-		this._gameStateManager.on("enemyAction", (action) => {
-			this.handleEnemyAction(action);
-		});
-
-		this._gameStateManager.on("gameStateChanged", (gameState) => {
-			if (
-				gameState.currentTurn === "player" &&
-				gameState.phase === GamePhase.PLAYER_TURN
-			) {
-				this.unblockActions();
-			} else {
-				this.blockActions();
-			}
-
-			this.emit("gameStateChanged", gameState);
-		});
-
-		this._gameStateManager.on("gameStarted", (gameState) => {
-			console.log("Game started");
-			this.emit("gameStarted", gameState);
-		});
-
-		// Listen for deck data from server
-		this._gameStateManager.on("deckDataReceived", (data) => {
-			this.handleDeckDataReceived(data);
-		});
+	public get canPlayerAct(): boolean {
+		return this._gameFlowManager.canPlayerAct;
 	}
-	/**
-	 * Handle enemy actions received from the server
-	 */
-	private async handleEnemyAction(action: any): Promise<void> {
-		console.log("GameController: Handling enemy action", action);
 
-		switch (action.type) {
-			case ActionType.PLACE_CARD:
-				await this.handleEnemyPlaceCard(action);
-				break;
-			case ActionType.PASS_TURN:
-				this.handleEnemyPassTurn(action);
-				break;
-			case ActionType.DRAW_CARD:
-				await this.handleEnemyDrawCard(action);
-				break;
-			default:
-				console.warn("Unknown enemy action type:", action.type);
+	public get isPlayerTurn(): boolean {
+		return this._gameFlowManager.gameState.phase === "player_turn";
+	}
+
+	public get isEnemyTurn(): boolean {
+		return this._gameFlowManager.gameState.phase === "enemy_turn";
+	}
+
+	public get areActionsBlocked(): boolean {
+		return !this._gameFlowManager.canPlayerAct;
+	}
+
+	public get gameState() {
+		return this._gameFlowManager.gameState;
+	}
+
+	public get gameStateManager() {
+		return {
+			gameState: this._gameFlowManager.gameState,
+			isPlayerTurn: this.isPlayerTurn,
+			isEnemyTurn: this.isEnemyTurn,
+			setMessageCallback: this.setMessageCallback.bind(this),
+		};
+	}
+
+	public get serverAPI(): ServerAPI {
+		return this._serverAPI;
+	}
+
+	public get currentFlowState(): GameFlowState {
+		return this._gameFlowManager.currentFlowState;
+	}
+
+	public get isShowingMessages(): boolean {
+		return this._gameFlowManager.isShowingMessages;
+	}
+
+	public get cardContainerManager(): CardContainerManager {
+		return this._cardContainers;
+	}
+
+	/**
+	 * Connect to server
+	 */
+	public async connectToServer(): Promise<boolean> {
+		const connected = await this._serverAPI.connect();
+
+		if (connected) {
+			// Set up server API message listener after successful connection
+			this._serverAPI.startListening((response) => {
+				this._gameFlowManager.handleServerResponse(response);
+			});
+		}
+
+		this.emit("connectionStatusChanged", connected);
+		return connected;
+	}
+
+	/**
+	 * Disconnect from server
+	 */
+	public disconnectFromServer(): void {
+		this._serverAPI.disconnect();
+		this.emit("connectionStatusChanged", false);
+	}
+
+	/**
+	 * Send player action to server
+	 */
+	public async sendPlayerAction(
+		cardId: number,
+		targetRow: "melee" | "ranged" | "siege"
+	): Promise<void> {
+		if (!this.canPlayerAct) {
+			throw new Error("Player cannot act right now");
+		}
+
+		this._gameFlowManager.onPlayerActionStarted();
+
+		try {
+			const success = await this._serverAPI.sendCardPlacement(
+				cardId,
+				targetRow
+			);
+			if (!success) {
+				throw new Error("Failed to send card placement action");
+			}
+		} catch (error) {
+			this._gameFlowManager.onPlayerActionFailed();
+			throw error;
 		}
 	}
 
 	/**
-	 * Handle enemy placing a card on the board
+	 * Send pass action to server
+	 */
+	public async sendPassTurn(): Promise<void> {
+		if (!this.canPlayerAct) {
+			throw new Error("Player cannot act right now");
+		}
+
+		this._gameFlowManager.onPlayerActionStarted();
+
+		try {
+			const success = await this._serverAPI.sendPassTurn();
+			if (!success) {
+				throw new Error("Failed to send pass action");
+			}
+		} catch (error) {
+			this._gameFlowManager.onPlayerActionFailed();
+			throw error;
+		}
+	}
+
+	/**
+	 * Set the message display callback - now uses improved system
+	 */
+	public setMessageCallback(
+		callback: (message: string) => Promise<void>
+	): void {
+		this._gameFlowManager.on(
+			"showMessage",
+			(message: string, onComplete: () => void) => {
+				callback(message)
+					.then(onComplete)
+					.catch((error) => {
+						console.error("Error in message callback:", error);
+						onComplete();
+					});
+			}
+		);
+	}
+
+	/**
+	 * Setup event listeners for the flow manager
+	 */
+	private setupEventListeners(): void {
+		this._gameFlowManager.on("flowStateChanged", (data) => {
+			const { newState, gameState } = data;
+
+			this.emit("flowStateChanged", data);
+			this.emit("gameStateChanged", gameState);
+
+			switch (newState) {
+				case GameFlowState.PLAYER_TURN_ACTIVE:
+					this.emit("playerTurnStarted", gameState);
+					this.emit("actionsUnblocked");
+					break;
+				case GameFlowState.WAITING_FOR_ENEMY:
+					this.emit("enemyTurnStarted", gameState);
+					this.emit("actionsBlocked");
+					break;
+				case GameFlowState.SHOWING_MESSAGES:
+					this.emit("messagesStarted");
+					this.emit("actionsBlocked");
+					break;
+				case GameFlowState.SENDING_ACTION:
+					this.emit("actionsBlocked");
+					break;
+				case GameFlowState.ROUND_END:
+					this.emit("roundEnded", gameState);
+					this.emit("actionsBlocked");
+					break;
+			}
+		});
+
+		// Listen for deck data to set up initial game state
+		this._gameFlowManager.on("deckDataReceived", (data) => {
+			this.emit("deckDataReceived", data);
+		});
+
+		// Listen for enemy actions to handle animations
+		this._gameFlowManager.on("enemyAction", (action) => {
+			this.handleEnemyAction(action);
+		});
+	}
+
+	/**
+	 * Handle enemy actions (animations, etc.)
+	 */
+	private async handleEnemyAction(action: any): Promise<void> {
+		switch (action.type) {
+			case "place_card":
+				await this.handleEnemyPlaceCard(action);
+				break;
+			case "pass_turn":
+				// Pass action is handled by messages, no additional animation needed
+				// TODO UPDATE PLAYER DISPLAY TO SHOW PASS
+				break;
+		}
+	}
+
+	/**
+	 * Handle enemy placing a card
 	 */
 	private async handleEnemyPlaceCard(action: any): Promise<void> {
 		const { cardId, targetRow } = action;
@@ -129,7 +268,6 @@ export class GameController extends EventEmitter {
 		// Transfer the card from enemy hand to target row
 		enemyHand.transferCardTo(0, targetContainer);
 
-		// Emit event for UI updates
 		this.emit("enemyCardPlaced", {
 			cardData,
 			targetRow,
@@ -138,27 +276,12 @@ export class GameController extends EventEmitter {
 	}
 
 	/**
-	 * Handle enemy passing their turn
+	 * Get enemy row container by name
 	 */
-	private handleEnemyPassTurn(_action: any): void {
-		this.emit("enemyPassedTurn");
-	}
-
-	/**
-	 * Handle enemy drawing a card
-	 */
-	private async handleEnemyDrawCard(_action: any): Promise<void> {
-		// This would typically be handled by deck management
-		// For now, just log it
-		console.log("Enemy drew a card");
-		this.emit("enemyDrewCard");
-	}
-
-	/**
-	 * Get the enemy row container based on row name
-	 */
-	private getEnemyRowContainer(rowName: string) {
-		switch (rowName) {
+	private getEnemyRowContainer(
+		row: "melee" | "ranged" | "siege"
+	): CardContainer | null {
+		switch (row) {
 			case "melee":
 				return this._cardContainers.enemy.melee;
 			case "ranged":
@@ -168,264 +291,5 @@ export class GameController extends EventEmitter {
 			default:
 				return null;
 		}
-	}
-
-	/**
-	 * Send player action to server
-	 */
-	public async sendPlayerAction(
-		cardId: number,
-		targetRow: "melee" | "ranged" | "siege"
-	): Promise<void> {
-		// Check if player can act before sending
-		if (!this.canPlayerAct) {
-			return;
-		}
-
-		// Block actions immediately to prevent spam clicking
-		this.blockActions();
-
-		try {
-			const success = await this._serverAPI.sendCardPlacement(
-				cardId,
-				targetRow
-			);
-
-			if (!success) {
-				console.error("Failed to send player action");
-				// Unblock actions if the request failed so player can retry
-				this.unblockActions();
-			}
-		} catch (error) {
-			console.error("Error sending player action:", error);
-			// Unblock actions on error so player can retry
-			this.unblockActions();
-		}
-	}
-
-	/**
-	 * Send pass turn action to server
-	 */
-	public async sendPassTurn(): Promise<void> {
-		// Check if player can act before sending
-		if (!this.canPlayerAct) {
-			return;
-		}
-
-		// Block actions immediately to prevent spam clicking
-		this.blockActions();
-
-		try {
-			const success = await this._serverAPI.sendPassTurn();
-
-			if (!success) {
-				console.error("Failed to send pass turn");
-				// Unblock actions if the request failed so player can retry
-				this.unblockActions();
-			}
-		} catch (error) {
-			console.error("Error sending pass turn:", error);
-			// Unblock actions on error so player can retry
-			this.unblockActions();
-		}
-	}
-
-	/**
-	 * Initialize connection to server
-	 */
-	public async connectToServer(): Promise<boolean> {
-		const connected = await this._serverAPI.connect();
-		this._gameStateManager.setConnected(connected);
-
-		if (connected) {
-			// Start listening for server messages
-			this._serverAPI.startListening(async (response) => {
-				await this._gameStateManager.handleServerResponse(response);
-			});
-		}
-
-		return connected;
-	}
-
-	/**
-	 * Disconnect from server
-	 */
-	public disconnectFromServer(): void {
-		this._serverAPI.disconnect();
-		this._serverAPI.stopListening();
-		this._gameStateManager.setConnected(false);
-	}
-
-	/**
-	 * Get game state manager (for debug panel)
-	 */
-	public get gameStateManager(): GameStateManager {
-		return this._gameStateManager;
-	}
-
-	/**
-	 * Get server API (for debug purposes)
-	 */
-	public get serverAPI(): ServerAPI {
-		return this._serverAPI;
-	}
-
-	/**
-	 * Check if it's currently player's turn
-	 */
-	public get isPlayerTurn(): boolean {
-		return this._gameStateManager.isPlayerTurn;
-	}
-
-	/**
-	 * Check if it's currently enemy's turn
-	 */
-	public get isEnemyTurn(): boolean {
-		return this._gameStateManager.isEnemyTurn;
-	}
-
-	/**
-	 * Check if player actions are currently allowed
-	 */
-	public get canPlayerAct(): boolean {
-		return this.isPlayerTurn && !this._actionsBlocked;
-	}
-
-	/**
-	 * Check if actions are currently blocked (waiting for server response)
-	 */
-	public get areActionsBlocked(): boolean {
-		return this._actionsBlocked;
-	}
-
-	/**
-	 * Block all player actions (called when waiting for server response)
-	 */
-	private blockActions(): void {
-		if (!this._actionsBlocked) {
-			this._actionsBlocked = true;
-			this.emit("actionsBlocked");
-		}
-	}
-
-	/**
-	 * Unblock player actions (called when server response received)
-	 */
-	private unblockActions(): void {
-		if (this._actionsBlocked) {
-			this._actionsBlocked = false;
-			this.emit("actionsUnblocked");
-		}
-	}
-
-	/**
-	 * Called by UI when message display is complete and ready to proceed
-	 */
-	public onUIReadyToProceed(): void {
-		this.unblockActions();
-	}
-
-	/**
-	 * Set the message display callback for the game state manager
-	 */
-	public setMessageCallback(
-		callback: (message: string) => Promise<void>
-	): void {
-		this._gameStateManager.setMessageCallback(callback);
-	}
-
-	/**
-	 * Manually block player actions (for UI coordination)
-	 */
-	public manuallyBlockActions(): void {
-		this.blockActions(); // Call private method
-	}
-
-	/**
-	 * Manually unblock player actions (for UI coordination)
-	 */
-	public manuallyUnblockActions(): void {
-		this.unblockActions(); // Call private method
-	}
-
-	/**
-	 * Get current game state
-	 */
-	public get gameState() {
-		return this._gameStateManager.gameState;
-	}
-
-	/**
-	 * Handle deck data received from server
-	 */
-	private handleDeckDataReceived(data: any): void {
-		// Add player cards to hand (convert IDs to CardData)
-		if (data.playerHand && Array.isArray(data.playerHand)) {
-			const playerHand = this._cardContainers.player.hand;
-			if (playerHand) {
-				// Clear existing cards first
-				playerHand.removeAllCards();
-
-				// Convert card IDs to CardData and add to hand
-				const playerCardData = CardDatabase.generateCardsFromIds(
-					data.playerHand
-				);
-
-				// Use addCardsBatch for instant addition (no animations)
-				playerHand.addCardsBatch(playerCardData);
-
-				// Set all player cards to show front (player can see their own cards)
-				playerHand.getAllCards().forEach((card) => {
-					card.showFront();
-				});
-
-				console.log(
-					"Added",
-					playerCardData.length,
-					"cards to player hand:",
-					playerCardData.map((c) => c.name)
-				);
-			}
-		}
-
-		// Add dummy enemy cards (backs only) - use hand size from data or default
-		const enemyHandSize = data.enemyHandSize || data.playerHand?.length || 5;
-		const enemyHand = this._cardContainers.enemy.hand;
-		if (enemyHand) {
-			// Clear existing cards first
-			enemyHand.removeAllCards();
-
-			// Create dummy card data for enemy hand
-			const dummyCards = [];
-			for (let i = 0; i < enemyHandSize; i++) {
-				dummyCards.push(this.createDummyEnemyCardData());
-			}
-
-			// Use addCardsBatch for instant addition (no animations)
-			enemyHand.addCardsBatch(dummyCards);
-
-			// Set all enemy cards to show back (hidden from player)
-			enemyHand.getAllCards().forEach((card) => {
-				card.showBack();
-			});
-
-			console.log("Added", enemyHandSize, "dummy cards to enemy hand");
-		}
-
-		// Emit event for UI updates
-		this.emit("deckDataReceived", data);
-	}
-
-	/**
-	 * Create dummy enemy card data for server-controlled deck
-	 */
-	private createDummyEnemyCardData(): CardData {
-		return {
-			id: -1,
-			name: "Hidden Card",
-			score: 0,
-			faceTexture: "card_back",
-			type: CardType.MELEE,
-		};
 	}
 }

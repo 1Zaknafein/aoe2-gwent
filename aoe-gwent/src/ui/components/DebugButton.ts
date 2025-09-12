@@ -8,14 +8,13 @@ export class DebugButton extends Button {
 	constructor(
 		text: string,
 		onClick: () => void,
-		width: number = 120,
+		width: number = 150,
 		height: number = 40
 	) {
 		super(onClick, width, height);
 
 		this._background = new PixiGraphics();
 		this._background.rect(0, 0, width, height).fill(0x4a90e2);
-		this._background.stroke({ width: 2, color: 0x357abd });
 		this.addChild(this._background);
 
 		this._label = new PixiText({
