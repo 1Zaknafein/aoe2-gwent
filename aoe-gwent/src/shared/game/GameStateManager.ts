@@ -65,7 +65,7 @@ export class GameStateManager extends EventEmitter {
 			enemyScore: 0,
 			playerPassed: false,
 			enemyPassed: false,
-			startingPlayer: "player", // Default, will be overridden by server
+			startingPlayer: "player",
 			playerHandSize: 0,
 			enemyHandSize: 0,
 		};
@@ -109,27 +109,22 @@ export class GameStateManager extends EventEmitter {
 		previousGameState: GameState
 	): Promise<void> {
 		if (!this._showMessageCallback) {
-			return; // No callback set, skip message display
+			return;
 		}
 
-		// Check if it's a turn change to player
 		const currentPhase = previousGameState.phase;
 		const newPhase = newGameState.phase;
 
-		// Show enemy pass message first (if it happened)
 		if (newGameState.enemyPassed && !previousGameState.enemyPassed) {
 			await this._showMessageCallback("Opponent passed");
 		}
 
-		// Show "Your turn!" message when it becomes player's turn
 		if (
 			newPhase === GamePhase.PLAYER_TURN &&
 			currentPhase !== GamePhase.PLAYER_TURN
 		) {
 			await this._showMessageCallback("Your turn!");
-		}
-		// Show "Opponent's turn!" message when it becomes enemy's turn
-		else if (
+		} else if (
 			newPhase === GamePhase.ENEMY_TURN &&
 			currentPhase !== GamePhase.ENEMY_TURN
 		) {
@@ -159,17 +154,14 @@ export class GameStateManager extends EventEmitter {
 	private async handleGameStateUpdate(response: ServerResponse): Promise<void> {
 		if (response.gameState) {
 			const previousPhase = this._gameState.phase;
-			const previousGameState = { ...this._gameState }; // Save previous state for comparison
+			const previousGameState = { ...this._gameState };
 
-			// Show messages before updating state
 			await this.showTurnMessage(response.gameState, previousGameState);
 
-			// Now update the state
 			this._gameState = response.gameState;
 
 			this.emit("gameStateChanged", this._gameState);
 
-			// Emit specific events for phase changes
 			if (previousPhase !== this._gameState.phase) {
 				this.emit("phaseChanged", this._gameState.phase);
 			}
@@ -178,31 +170,30 @@ export class GameStateManager extends EventEmitter {
 
 	private async handleEnemyAction(response: ServerResponse): Promise<void> {
 		if (response.action && response.action.playerId === "enemy") {
-			console.log("Enemy performed action:", response.action);
 			this.emit("enemyAction", response.action);
 
-			// Update game state if provided - use the same message display logic
 			if (response.gameState) {
-				const previousGameState = { ...this._gameState }; // Save previous state for comparison
+				const previousGameState = { ...this._gameState };
 
-				// Show messages before updating state (especially for enemy pass)
 				await this.showTurnMessage(response.gameState, previousGameState);
 
-				// Now update the state
 				this._gameState = response.gameState;
+
 				this.emit("gameStateChanged", this._gameState);
 			}
 		}
 	}
 
 	private handleDeckData(response: ServerResponse): void {
-		// Calculate enemy hand size based on player hand size (they should be equal initially)
-		const enemyHandSize = response.playerHand ? response.playerHand.length : 5;
+		const enemyHandSize = response.gameState?.enemyHandSize;
+
+		if (enemyHandSize === undefined) {
+			throw new Error("Enemy hand size is missing in deck data");
+		}
 
 		this.emit("deckDataReceived", {
-			// playerDeck removed - server keeps deck cards hidden from client
 			playerHand: response.playerHand,
-			enemyHandSize: enemyHandSize, // Add enemy hand size for dummy cards
+			enemyHandSize: enemyHandSize,
 		});
 
 		// Update game state if provided - this is when the actual game begins
