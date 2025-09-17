@@ -477,19 +477,6 @@ button:focus-visible {
 }
 
 /* Medieval border animations */
-@keyframes glow {
-    0%, 100% { 
-        box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); 
-    }
-    50% { 
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 0 30px rgba(212, 175, 55, 0.3); 
-    }
-}
-
-.lobby-section:hover {
-    animation: glow 2s ease-in-out infinite;
-}
-
 /* Additional lobby-specific styles */
 .lobby-actions {
     display: flex;
@@ -615,17 +602,34 @@ button:focus-visible {
         rgba(139, 69, 19, 0.4) 0%, 
         rgba(101, 67, 33, 0.4) 50%, 
         rgba(139, 69, 19, 0.4) 100%);
-    border: 2px solid #DAA520;
-    border-radius: 12px;
-    padding: 20px;
-    margin: 15px 0;
+    border-top: 2px solid #DAA520;
+    border-bottom: 2px solid #DAA520;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    padding: 8px 12px;
+    margin: 6px 0;
     box-shadow: 
-        0 4px 8px rgba(0,0,0,0.3),
-        0 2px 4px rgba(218, 165, 32, 0.2),
-        inset 0 1px 0 rgba(255,255,255,0.1);
+        0 1px 3px rgba(0,0,0,0.2),
+        inset 0 1px 0 rgba(255,255,255,0.05);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
+}
+
+.room-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.room-details {
+    flex: 1;
+}
+
+.room-actions {
+    flex-shrink: 0;
 }
 
 .room-card::before {
@@ -642,34 +646,34 @@ button:focus-visible {
 }
 
 .room-card:hover {
-    transform: translateY(-2px);
     box-shadow: 
-        0 8px 16px rgba(0,0,0,0.4),
-        0 4px 8px rgba(218, 165, 32, 0.3),
-        inset 0 1px 0 rgba(255,255,255,0.2);
-    border-color: #FFD700;
+        0 2px 6px rgba(0,0,0,0.3),
+        0 1px 3px rgba(218, 165, 32, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    border-top-color: #FFD700;
+    border-bottom-color: #FFD700;
 }
 
 .room-name {
     font-family: 'Cinzel', serif;
-    font-size: 1.4em;
+    font-size: 1.1em;
     font-weight: 600;
     color: #FFD700;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
 }
 
 .room-info {
     color: #F4E4BC;
-    font-size: 0.9em;
-    margin-bottom: 12px;
+    font-size: 0.8em;
+    margin-bottom: 6px;
     text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
 .room-players {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 6px;
+    margin-bottom: 0;
     flex-wrap: wrap;
 }
 
@@ -697,12 +701,12 @@ button:focus-visible {
     padding: 8px 16px;
     font-family: 'Cinzel', serif;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
     text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
     box-shadow: 
-        0 2px 4px rgba(0,0,0,0.3),
+        0 1px 3px rgba(0,0,0,0.3),
         inset 0 1px 0 rgba(255,255,255,0.3);
     font-size: 0.9em;
     min-width: 80px;
@@ -710,9 +714,8 @@ button:focus-visible {
 
 .join-room-btn:hover {
     background: linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #FFD700 100%);
-    transform: translateY(-1px);
     box-shadow: 
-        0 4px 8px rgba(0,0,0,0.4),
+        0 2px 6px rgba(0,0,0,0.4),
         inset 0 1px 0 rgba(255,255,255,0.4);
     border-color: #FFF8DC;
 }
@@ -755,16 +758,16 @@ button:focus-visible {
 
 /* Current Room Styling */
 .room-card.current-player-room {
-    border-color: #32CD32;
+    border-top-color: #32CD32;
+    border-bottom-color: #32CD32;
     box-shadow: 
-        0 4px 8px rgba(0,0,0,0.3),
-        0 2px 4px rgba(50, 205, 50, 0.4),
-        inset 0 1px 0 rgba(255,255,255,0.1);
+        0 1px 3px rgba(0,0,0,0.2),
+        0 1px 2px rgba(50, 205, 50, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.05);
     background: linear-gradient(135deg, 
         rgba(34, 139, 34, 0.3) 0%, 
         rgba(139, 69, 19, 0.4) 50%, 
         rgba(34, 139, 34, 0.3) 100%);
-    padding-bottom: 25px; /* Extra padding when no join button */
 }
 
 .room-card.current-player-room .room-name {
@@ -777,4 +780,32 @@ button:focus-visible {
     color: #90EE90 !important;
     box-shadow: 0 0 12px rgba(50, 205, 50, 0.5) !important;
     font-weight: bold;
+}
+
+/* Room Status Styling */
+.room-card.room-status-active {
+    border-top-color: #FF6B35;
+    border-bottom-color: #FF6B35;
+    background: linear-gradient(135deg, 
+        rgba(255, 107, 53, 0.2) 0%, 
+        rgba(139, 69, 19, 0.4) 50%, 
+        rgba(255, 107, 53, 0.2) 100%);
+}
+
+.room-card.room-status-active .room-name {
+    color: #FF8C69;
+}
+
+.room-card.room-status-full {
+    border-top-color: #B8860B;
+    border-bottom-color: #B8860B;
+    background: linear-gradient(135deg, 
+        rgba(184, 134, 11, 0.2) 0%, 
+        rgba(139, 69, 19, 0.4) 50%, 
+        rgba(184, 134, 11, 0.2) 100%);
+    opacity: 0.8;
+}
+
+.room-card.room-status-full .room-name {
+    color: #DAA520;
 }

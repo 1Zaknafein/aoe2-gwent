@@ -16,13 +16,22 @@
         </div>
 
         <!-- Player Setup Section -->
-        <div class="lobby-section">
+        <div id="player-setup-section" class="lobby-section">
             <h3>Player Setup</h3>
             <div class="form-group">
                 <label for="player-name">Player Name:</label>
                 <input type="text" id="player-name" placeholder="Enter your name" maxlength="20" />
             </div>
 
+            <div class="lobby-actions">
+                <button id="login-btn" class="btn">Enter Lobby</button>
+                <button id="logout-btn" class="btn btn-secondary" style="display: none;">Change Name</button>
+            </div>
+        </div>
+
+        <!-- Lobby Actions Section (initially hidden) -->
+        <div id="lobby-actions-section" class="lobby-section" style="display: none;">
+            <h3>Lobby Actions</h3>
             <div class="lobby-actions">
                 <button id="create-room-btn" class="btn">Create Room</button>
             </div>
@@ -41,9 +50,9 @@
             </div>
         </div>
 
-        <!-- Available Rooms Section -->
-        <div class="lobby-section">
-            <h3>Available Rooms</h3>
+        <!-- Rooms Section (initially hidden) -->
+        <div id="available-rooms-section" class="lobby-section" style="display: none;">
+            <h3>Rooms</h3>
             <div class="room-list" id="available-rooms">
                 <!-- Rooms will be populated here dynamically -->
             </div>
@@ -76,7 +85,7 @@
         </div>
     </div>
 
-    <script type="module" src="/src/lobby-fixed.ts"></script>
+    <script type="module" src="/src/lobby.ts"></script>
 </body>
 
 </html>
