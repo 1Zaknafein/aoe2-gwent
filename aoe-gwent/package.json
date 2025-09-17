@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:game": "vite --open /game.html",
+    "dev:lobby": "vite --open /lobby.html",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

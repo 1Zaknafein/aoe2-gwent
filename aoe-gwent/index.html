@@ -10,6 +10,16 @@
 
 <body>
   <div id="app">
+    <!-- Redirect to lobby if no specific route -->
+    <script>
+      // Simple redirect to lobby unless starting game
+      const urlParams = new URLSearchParams(window.location.search);
+      const isDirect = urlParams.get('game') || urlParams.get('direct');
+
+      if (window.location.pathname === '/' && !isDirect) {
+        window.location.href = '/lobby.html';
+      }
+    </script>
     <canvas id="pixi-screen"></canvas>
   </div>
   <script type="module" src="/src/main.ts"></script>

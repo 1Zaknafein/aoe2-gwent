@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cinzel+Decorative:wght@400;700&display=swap');
+
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -104,4 +107,674 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Age of Empires 2 Themed Lobby Styles */
+
+.lobby-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Cinzel', serif;
+    background: 
+        radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(160, 82, 45, 0.3) 0%, transparent 50%),
+        linear-gradient(135deg, #1a0f0a, #2d1b13, #3d2817);
+    min-height: 100vh;
+    color: #f4e4bc;
+    position: relative;
+    overflow-x: hidden;
+}
+
+.lobby-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 98px,
+            rgba(139, 69, 19, 0.1) 100px
+        ),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 98px,
+            rgba(139, 69, 19, 0.1) 100px
+        );
+    pointer-events: none;
+}
+
+.lobby-header {
+    text-align: center;
+    margin-bottom: 40px;
+    position: relative;
+}
+
+.lobby-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 3.2em;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #d4af37;
+    text-shadow: 
+        3px 3px 0px #8b4513,
+        6px 6px 10px rgba(0,0,0,0.8),
+        0 0 30px rgba(212, 175, 55, 0.5);
+    letter-spacing: 2px;
+    position: relative;
+}
+
+.lobby-title::before,
+.lobby-title::after {
+    content: '⚔';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.6em;
+    color: #cd853f;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+}
+
+.lobby-title::before {
+    left: -60px;
+}
+
+.lobby-title::after {
+    right: -60px;
+    transform: translateY(-50%) scaleX(-1);
+}
+
+.lobby-section {
+    background: 
+        linear-gradient(145deg, rgba(139, 69, 19, 0.4), rgba(160, 82, 45, 0.2)),
+        radial-gradient(circle at center, rgba(205, 133, 63, 0.1) 0%, transparent 70%);
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    position: relative;
+    box-shadow: 
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+        0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.lobby-section::before {
+    content: '';
+    position: absolute;
+    top: -3px; left: -3px; right: -3px; bottom: -3px;
+    background: linear-gradient(45deg, #d4af37, #cd853f, #daa520, #b8860b);
+    border-radius: 15px;
+    z-index: -1;
+}
+
+.lobby-section h3 {
+    margin-top: 0;
+    color: #d4af37;
+    border-bottom: 3px solid;
+    border-image: linear-gradient(90deg, #d4af37, #cd853f, transparent) 1;
+    padding-bottom: 12px;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.4em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #f4e4bc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9em;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #8b4513;
+    border-radius: 8px;
+    background: 
+        linear-gradient(145deg, rgba(26, 15, 10, 0.9), rgba(45, 27, 19, 0.7)),
+        radial-gradient(circle at center, rgba(139, 69, 19, 0.2) 0%, transparent 70%);
+    color: #f4e4bc;
+    font-size: 16px;
+    font-family: 'Cinzel', serif;
+    transition: all 0.3s ease;
+    box-shadow: inset 2px 2px 5px rgba(0,0,0,0.3);
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #d4af37;
+    box-shadow: 
+        inset 2px 2px 5px rgba(0,0,0,0.3),
+        0 0 15px rgba(212, 175, 55, 0.4),
+        0 0 5px rgba(212, 175, 55, 0.6);
+    background: 
+        linear-gradient(145deg, rgba(26, 15, 10, 0.95), rgba(45, 27, 19, 0.8)),
+        radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+}
+
+.form-group input::placeholder {
+    color: rgba(244, 228, 188, 0.5);
+    font-style: italic;
+}
+
+.btn {
+    background: linear-gradient(145deg, #d4af37 0%, #daa520 25%, #b8860b 75%, #8b6914 100%);
+    color: #1a0f0a;
+    border: 2px solid #8b6914;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'Cinzel', serif;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.btn:hover {
+    background: linear-gradient(145deg, #ffd700 0%, #f0c814 25%, #d4af37 75%, #b8860b 100%);
+    transform: translateY(-2px);
+    box-shadow: 
+        0 6px 12px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.3),
+        0 0 20px rgba(212, 175, 55, 0.3);
+    border-color: #d4af37;
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.btn-secondary {
+    background: linear-gradient(145deg, #8b7355 0%, #a0845f 25%, #6d5a47 75%, #5d4e3a 100%);
+    color: #f4e4bc;
+    border-color: #5d4e3a;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(145deg, #a0845f 0%, #b8941f 25%, #8b7355 75%, #6d5a47 100%);
+    color: #d4af37;
+    border-color: #8b7355;
+}
+
+.room-list {
+    max-height: 350px;
+    overflow-y: auto;
+    border: 3px solid #8b4513;
+    border-radius: 10px;
+    background: 
+        linear-gradient(145deg, rgba(26, 15, 10, 0.8), rgba(45, 27, 19, 0.6)),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 20px,
+            rgba(139, 69, 19, 0.1) 22px
+        );
+    box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.room-item {
+    padding: 18px;
+    border-bottom: 1px solid rgba(139, 69, 19, 0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.room-item:hover {
+    background: 
+        linear-gradient(90deg, rgba(212, 175, 55, 0.1), rgba(139, 69, 19, 0.2)),
+        radial-gradient(circle at left, rgba(205, 133, 63, 0.1) 0%, transparent 50%);
+    border-left: 4px solid #d4af37;
+    padding-left: 14px;
+}
+
+.room-info h4 {
+    margin: 0 0 5px 0;
+    color: #d4af37;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.1em;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.room-info p {
+    margin: 0;
+    color: #cd853f;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.player-list {
+    display: flex;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.player-card {
+    background: 
+        linear-gradient(145deg, rgba(139, 69, 19, 0.3), rgba(160, 82, 45, 0.2)),
+        radial-gradient(circle at center, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
+    padding: 12px;
+    border-radius: 8px;
+    border: 2px solid #8b4513;
+    flex: 1;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.player-ready {
+    background: 
+        linear-gradient(145deg, rgba(34, 139, 34, 0.4), rgba(50, 205, 50, 0.2)),
+        radial-gradient(circle at center, rgba(144, 238, 144, 0.2) 0%, transparent 70%);
+    border-color: #228b22;
+    color: #90EE90;
+    box-shadow: 
+        inset 0 1px 0 rgba(255,255,255,0.2),
+        0 0 15px rgba(50, 205, 50, 0.3);
+}
+
+.player-ready::before {
+    content: '⚔';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    color: #90EE90;
+    font-size: 0.8em;
+    text-shadow: 0 0 5px rgba(144, 238, 144, 0.8);
+}
+
+.game-controls {
+    text-align: center;
+    margin-top: 25px;
+}
+
+.status-message {
+    text-align: center;
+    padding: 12px 18px;
+    margin: 12px 0;
+    border-radius: 8px;
+    font-weight: 600;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.5px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.status-success {
+    background: 
+        linear-gradient(145deg, rgba(34, 139, 34, 0.3), rgba(50, 205, 50, 0.2)),
+        radial-gradient(circle at center, rgba(144, 238, 144, 0.1) 0%, transparent 70%);
+    color: #90EE90;
+    border: 2px solid #228b22;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.status-error {
+    background: 
+        linear-gradient(145deg, rgba(139, 0, 0, 0.4), rgba(255, 0, 0, 0.2)),
+        radial-gradient(circle at center, rgba(255, 99, 71, 0.2) 0%, transparent 70%);
+    color: #ff6b6b;
+    border: 2px solid #8b0000;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.status-info {
+    background: 
+        linear-gradient(145deg, rgba(0, 100, 139, 0.4), rgba(0, 123, 255, 0.2)),
+        radial-gradient(circle at center, rgba(135, 206, 235, 0.2) 0%, transparent 70%);
+    color: #87CEEB;
+    border: 2px solid #006487;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Scrollbar Styling */
+.room-list::-webkit-scrollbar {
+    width: 12px;
+}
+
+.room-list::-webkit-scrollbar-track {
+    background: rgba(26, 15, 10, 0.8);
+    border-radius: 6px;
+}
+
+.room-list::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #d4af37, #8b4513);
+    border-radius: 6px;
+    border: 2px solid rgba(26, 15, 10, 0.8);
+}
+
+.room-list::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffd700, #d4af37);
+}
+
+/* Medieval border animations */
+@keyframes glow {
+    0%, 100% { 
+        box-shadow: 0 0 10px rgba(212, 175, 55, 0.3); 
+    }
+    50% { 
+        box-shadow: 0 0 20px rgba(212, 175, 55, 0.6), 0 0 30px rgba(212, 175, 55, 0.3); 
+    }
+}
+
+.lobby-section:hover {
+    animation: glow 2s ease-in-out infinite;
+}
+
+/* Additional lobby-specific styles */
+.lobby-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.lobby-actions .btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+#status-container {
+    margin-top: 20px;
+}
+
+#current-room-section {
+    border: 2px solid #d4af37;
+    box-shadow: 
+        0 0 15px rgba(212, 175, 55, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: 
+        linear-gradient(145deg, rgba(139, 69, 19, 0.5), rgba(160, 82, 45, 0.3)),
+        radial-gradient(circle at center, rgba(205, 133, 63, 0.2) 0%, transparent 70%);
+}
+
+#current-room-section h3 {
+    color: #ffd700;
+    text-shadow: 
+        2px 2px 4px rgba(0,0,0,0.7),
+        0 0 10px rgba(255, 215, 0, 0.5);
+    border-bottom-color: #ffd700;
+}
+
+#current-room-section h3::before {
+    content: '🏰 ';
+    margin-right: 10px;
+}
+
+.player-card {
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.player-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.player-card:hover::before {
+    left: 100%;
+}
+
+.player-ready::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: #90EE90;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(144, 238, 144, 0.8);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1;
+        transform: translateY(-50%) scale(1);
+    }
+    50% { 
+        opacity: 0.6;
+        transform: translateY(-50%) scale(1.2);
+    }
+}
+
+/* Enhanced ready button styling */
+#ready-btn.btn-secondary {
+    background: linear-gradient(145deg, #228b22 0%, #32cd32 25%, #90EE90 75%, #98fb98 100%);
+    color: #000;
+    border-color: #228b22;
+    animation: readyGlow 2s ease-in-out infinite;
+}
+
+@keyframes readyGlow {
+    0%, 100% { 
+        box-shadow: 
+            0 4px 8px rgba(0,0,0,0.3),
+            0 0 20px rgba(50, 205, 50, 0.4);
+    }
+    50% { 
+        box-shadow: 
+            0 6px 12px rgba(0,0,0,0.4),
+            0 0 30px rgba(50, 205, 50, 0.7);
+    }
+}
+
+#available-rooms:empty::after {
+    content: 'No rooms available. Create one to get started!';
+    display: block;
+    text-align: center;
+    padding: 30px;
+    color: rgba(244, 228, 188, 0.7);
+    font-style: italic;
+    background: rgba(139, 69, 19, 0.1);
+    border-radius: 8px;
+    margin: 10px 0;
+}
+
+/* Room Card Styling */
+.room-card {
+    background: linear-gradient(135deg, 
+        rgba(139, 69, 19, 0.4) 0%, 
+        rgba(101, 67, 33, 0.4) 50%, 
+        rgba(139, 69, 19, 0.4) 100%);
+    border: 2px solid #DAA520;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 15px 0;
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3),
+        0 2px 4px rgba(218, 165, 32, 0.2),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.room-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 20%, 
+        rgba(255, 215, 0, 0.1) 0%, 
+        transparent 50%);
+    pointer-events: none;
+}
+
+.room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 8px 16px rgba(0,0,0,0.4),
+        0 4px 8px rgba(218, 165, 32, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+    border-color: #FFD700;
+}
+
+.room-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4em;
+    font-weight: 600;
+    color: #FFD700;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.room-info {
+    color: #F4E4BC;
+    font-size: 0.9em;
+    margin-bottom: 12px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.room-players {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.room-players .player-name {
+    background: rgba(139, 69, 19, 0.6);
+    color: #F4E4BC;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    border: 1px solid rgba(218, 165, 32, 0.3);
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.room-players .player-name.ready {
+    background: rgba(34, 139, 34, 0.6);
+    border-color: rgba(50, 205, 50, 0.5);
+    color: #90EE90;
+    box-shadow: 0 0 8px rgba(50, 205, 50, 0.3);
+}
+
+.join-room-btn {
+    background: linear-gradient(135deg, #DAA520 0%, #B8860B 50%, #DAA520 100%);
+    color: #2F1B14;
+    border: 2px solid #FFD700;
+    padding: 8px 16px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    font-size: 0.9em;
+    min-width: 80px;
+}
+
+.join-room-btn:hover {
+    background: linear-gradient(135deg, #FFD700 0%, #DAA520 50%, #FFD700 100%);
+    transform: translateY(-1px);
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.4);
+    border-color: #FFF8DC;
+}
+
+.join-room-btn:active {
+    transform: translateY(0);
+    box-shadow: 
+        0 2px 4px rgba(0,0,0,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.no-rooms {
+    text-align: center;
+    padding: 40px 20px;
+    color: rgba(244, 228, 188, 0.7);
+    font-style: italic;
+    background: rgba(139, 69, 19, 0.1);
+    border: 2px dashed rgba(218, 165, 32, 0.3);
+    border-radius: 12px;
+    margin: 20px 0;
+    font-family: 'Cinzel', serif;
+}
+
+/* Host Badge Styling */
+.host-badge {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: linear-gradient(135deg, #FFD700 0%, #DAA520 100%);
+    color: #2F1B14;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.3);
+    border: 1px solid #FFF8DC;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    font-family: 'Cinzel', serif;
+}
+
+/* Current Room Styling */
+.room-card.current-player-room {
+    border-color: #32CD32;
+    box-shadow: 
+        0 4px 8px rgba(0,0,0,0.3),
+        0 2px 4px rgba(50, 205, 50, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, 
+        rgba(34, 139, 34, 0.3) 0%, 
+        rgba(139, 69, 19, 0.4) 50%, 
+        rgba(34, 139, 34, 0.3) 100%);
+    padding-bottom: 25px; /* Extra padding when no join button */
+}
+
+.room-card.current-player-room .room-name {
+    color: #90EE90;
+}
+
+.player-name.current-player {
+    background: rgba(50, 205, 50, 0.6) !important;
+    border-color: rgba(144, 238, 144, 0.8) !important;
+    color: #90EE90 !important;
+    box-shadow: 0 0 12px rgba(50, 205, 50, 0.5) !important;
+    font-weight: bold;
 }
