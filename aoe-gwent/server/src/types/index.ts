@@ -68,16 +68,78 @@ export interface LobbyMessages {
 	"lobby:error": { message: string; code?: string };
 }
 
-// Game Messages (for later implementation)
+// Game Messages
 export interface GameMessages {
 	// Client to Server
-	"game:action": { action: any };
-	"game:ready": { playerId: string };
+	"game:action": {
+		roomId: string;
+		playerId: string;
+		action: {
+			type: "place_card" | "pass_turn" | "draw_card";
+			cardId?: number;
+			targetRow?: "melee" | "ranged" | "siege";
+		};
+	};
+	"game:ready": { roomId: string; playerId: string };
+	"game:reconnect": { roomId: string; playerId: string; sessionToken?: string };
 
 	// Server to Client
-	"game:state_update": { gameState: any };
-	"game:action_result": { success: boolean; error?: string };
-	"game:game_over": { winner: string; reason: string };
+	"game:state_update": {
+		roomId: string;
+		gameState: {
+			phase:
+				| "waiting_for_game_start"
+				| "player_turn"
+				| "enemy_turn"
+				| "round_end"
+				| "game_end";
+			currentTurn: string;
+			roundNumber: number;
+			scores: Record<string, number>;
+			passedPlayers: string[];
+			startingPlayer: string;
+			handSizes: Record<string, number>;
+		};
+		boards?: Record<
+			string,
+			{ melee: number[]; ranged: number[]; siege: number[] }
+		>;
+	};
+	"game:action_result": {
+		roomId: string;
+		success: boolean;
+		error?: string;
+		action?: {
+			playerId: string;
+			type: string;
+			cardId?: number;
+			targetRow?: string;
+		};
+	};
+	"game:hand_update": {
+		roomId: string;
+		playerId: string;
+		hand: number[];
+	};
+	"game:round_ended": {
+		roomId: string;
+		roundNumber: number;
+		scores: Record<string, number>;
+		roundWinner?: string;
+	};
+	"game:game_ended": {
+		roomId: string;
+		winner: string;
+		finalScores: Record<string, number>;
+	};
+	"game:started": {
+		roomId: string;
+		playerName: string;
+		enemyName: string;
+		isHost: boolean;
+		startingPlayer: string;
+	};
+	"game:error": { roomId: string; message: string; code?: string };
 }
 
 // Combined message types

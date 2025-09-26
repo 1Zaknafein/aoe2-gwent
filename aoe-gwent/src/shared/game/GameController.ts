@@ -1,8 +1,7 @@
 import { EventEmitter } from "pixi.js";
-import { GameFlowManager, GameFlowState } from "./GameFlowManager";
-import { ServerAPI } from "../../api/ServerAPI";
-import { CardContainer, CardContainerManager } from "../../entities/card";
-import { CardDatabase } from "../../shared/database";
+import { GameFlowManager, GameFlowState, ActionType } from "./GameFlowManager";
+import { WebSocketServerAPI } from "../../api/WebSocketServerAPI";
+import { CardContainerManager, CardContainer } from "../../entities/card";
 import { CardData } from "../../entities/card";
 
 export interface EnemyCardPlacedEvent {
@@ -12,7 +11,7 @@ export interface EnemyCardPlacedEvent {
 
 export class GameController extends EventEmitter {
 	private _gameFlowManager: GameFlowManager;
-	private _serverAPI: ServerAPI;
+	private _serverAPI: WebSocketServerAPI;
 	private _cardContainers: CardContainerManager;
 
 	constructor(cardContainers: CardContainerManager) {
@@ -20,7 +19,7 @@ export class GameController extends EventEmitter {
 
 		this._cardContainers = cardContainers;
 		this._gameFlowManager = new GameFlowManager();
-		this._serverAPI = new ServerAPI();
+		this._serverAPI = new WebSocketServerAPI();
 
 		this.setupEventListeners();
 	}
@@ -45,16 +44,11 @@ export class GameController extends EventEmitter {
 		return this._gameFlowManager.gameState;
 	}
 
-	public get gameStateManager() {
-		return {
-			gameState: this._gameFlowManager.gameState,
-			isPlayerTurn: this.isPlayerTurn,
-			isEnemyTurn: this.isEnemyTurn,
-			setMessageCallback: this.setMessageCallback.bind(this),
-		};
+	public get gameFlowManager(): GameFlowManager {
+		return this._gameFlowManager;
 	}
 
-	public get serverAPI(): ServerAPI {
+	public get serverAPI(): WebSocketServerAPI {
 		return this._serverAPI;
 	}
 
@@ -78,7 +72,9 @@ export class GameController extends EventEmitter {
 
 		if (connected) {
 			// Set up server API message listener after successful connection
-			this._serverAPI.startListening((response) => {
+			this._serverAPI.startListening((response: any) => {
+				console.log("📨 Received server response:", response);
+				// Handle the response through the game flow manager
 				this._gameFlowManager.handleServerResponse(response);
 			});
 		}
@@ -109,13 +105,14 @@ export class GameController extends EventEmitter {
 		this._gameFlowManager.onPlayerActionStarted();
 
 		try {
-			const success = await this._serverAPI.sendCardPlacement(
+			const response = await this._serverAPI.sendAction({
+				type: ActionType.PLACE_CARD,
 				cardId,
-				targetRow
-			);
-			if (!success) {
-				throw new Error("Failed to send card placement action");
-			}
+				targetRow,
+				playerId: "player",
+			});
+			// For now, assume success since the WebSocketServerAPI doesn't return proper success/error format
+			console.log("Action sent:", response);
 		} catch (error) {
 			this._gameFlowManager.onPlayerActionFailed();
 			throw error;
@@ -133,10 +130,11 @@ export class GameController extends EventEmitter {
 		this._gameFlowManager.onPlayerActionStarted();
 
 		try {
-			const success = await this._serverAPI.sendPassTurn();
-			if (!success) {
-				throw new Error("Failed to send pass action");
-			}
+			const response = await this._serverAPI.sendAction({
+				type: ActionType.PASS_TURN,
+				playerId: "player",
+			});
+			console.log("Pass action sent:", response);
 		} catch (error) {
 			this._gameFlowManager.onPlayerActionFailed();
 			throw error;
@@ -204,6 +202,11 @@ export class GameController extends EventEmitter {
 		this._gameFlowManager.on("enemyAction", (action) => {
 			this.handleEnemyAction(action);
 		});
+
+		// Listen for player names to update displays
+		this._gameFlowManager.on("playerNamesReceived", (data) => {
+			this.emit("playerNamesReceived", data);
+		});
 	}
 
 	/**
@@ -234,13 +237,24 @@ export class GameController extends EventEmitter {
 			return;
 		}
 
-		// Get card data from database
-		const cardData = CardDatabase.getCardById(cardId);
-		if (!cardData) {
-			console.error("Could not find card data for ID:", cardId);
-			return;
-		}
+		// TODO: Server should send complete CardData for enemy actions instead of just cardId
+		// For now, skip card data lookup until server is updated to send complete card data
+		// const cardData = CardDatabase.getCardById(cardId);
+		// if (!cardData) {
+		// 	console.error("Could not find card data for ID:", cardId);
+		// 	return;
+		// }
 
+		console.warn(
+			"TODO: Server should send complete CardData for enemy card actions"
+		);
+		console.log("Enemy played card ID:", cardId, "on row:", targetRow);
+
+		// Skip actual card placement for now until server sends complete card data
+		return;
+
+		// TODO: Uncomment this code when server sends complete CardData
+		/*
 		// Get target container
 		const targetContainer = this.getEnemyRowContainer(targetRow);
 		if (!targetContainer) {
@@ -273,6 +287,7 @@ export class GameController extends EventEmitter {
 			targetRow,
 			container: targetContainer,
 		});
+		*/
 	}
 
 	/**

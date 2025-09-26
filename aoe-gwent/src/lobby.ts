@@ -39,9 +39,6 @@ interface SessionData {
 // DOM Elements (matching actual HTML)
 const loginBtn = document.getElementById("login-btn") as HTMLButtonElement;
 const logoutBtn = document.getElementById("logout-btn") as HTMLButtonElement;
-const playerSetupSection = document.getElementById(
-	"player-setup-section"
-) as HTMLElement;
 const lobbyActionsSection = document.getElementById(
 	"lobby-actions-section"
 ) as HTMLElement;
@@ -235,12 +232,35 @@ function initializeConnection() {
 	});
 
 	gameClient.on("lobby:game_starting", (data) => {
-		showStatus("Game starting! Redirecting...", "success");
+		showStatus("Game starting! Transitioning to game...", "success");
 		sessionStorage.setItem("gameSession", JSON.stringify(data.gameSession));
-		clearSessionData();
+
+		// Save the current connection for the game page
+		// Store session data in multiple places for robust recovery
+		const sessionInfo = {
+			playerId: currentPlayer?.id,
+			playerName: currentPlayer?.name,
+			roomId: data.gameSession.roomId,
+		};
+
+		// Store only in sessionStorage (cleared when tab closes)
+		sessionStorage.setItem("playerConnection", JSON.stringify(sessionInfo));
+
+		// Don't clear session data immediately - let game.html handle it
+		// clearSessionData();
+
+		// Create URL with parameters as backup recovery method
+		const gameUrl = new URL("game.html", window.location.origin);
+		gameUrl.searchParams.set("room", data.gameSession.roomId);
+		gameUrl.searchParams.set("player", currentPlayer?.id || "");
+		gameUrl.searchParams.set(
+			"name",
+			encodeURIComponent(currentPlayer?.name || "")
+		);
+
 		setTimeout(() => {
-			window.location.href = "game.html";
-		}, 2000);
+			window.location.href = gameUrl.toString();
+		}, 1500);
 	});
 
 	gameClient.on("lobby:error", (data) => {

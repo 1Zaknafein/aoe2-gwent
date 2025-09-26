@@ -72,10 +72,18 @@ export interface LobbyMessages {
 // Game Messages (for later implementation)
 export interface GameMessages {
 	// Client to Server
-	"game:action": { action: any };
+	"game:action": { roomId: string; playerId: string; action: any };
 	"game:ready": { playerId: string };
+	"game:reconnect": { roomId: string; playerId: string };
 
 	// Server to Client
+	"game:started": {
+		roomId: string;
+		playerName: string;
+		enemyName: string;
+		isHost: boolean;
+		startingPlayer: string;
+	};
 	"game:state_update": { gameState: any };
 	"game:action_result": { success: boolean; error?: string };
 	"game:game_over": { winner: string; reason: string };

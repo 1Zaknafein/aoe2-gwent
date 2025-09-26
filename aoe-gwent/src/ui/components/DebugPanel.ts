@@ -1,7 +1,7 @@
 import { PixiContainer, PixiSprite, PixiText } from "../../plugins/engine";
 import { DebugButton } from "../components";
 import { GameController } from "../../shared/game";
-import { Graphics, Sprite, Texture } from "pixi.js";
+import { Sprite, Texture } from "pixi.js";
 
 /**
  * Debug Panel for testing game functionality with fake server
@@ -20,7 +20,6 @@ export class DebugPanel extends PixiContainer {
 
 	// Panel properties
 	private readonly PANEL_WIDTH = 350;
-	private readonly PANEL_HEIGHT = 420;
 
 	constructor(gameController: GameController) {
 		super();
@@ -127,27 +126,28 @@ Can Player Act: ${this._gameController.canPlayerAct}`;
 
 	private async startGameWithRandomPlayer(): Promise<void> {
 		const serverAPI = this._gameController.serverAPI;
-		const startingPlayer = Math.random() < 0.5 ? "player" : "enemy";
 
 		try {
 			await serverAPI.connect();
-			await serverAPI.requestGameStart(startingPlayer);
+			// These methods only exist in the fake ServerAPI, not WebSocketServerAPI
+			// await serverAPI.requestGameStart(startingPlayer);
+			console.log(
+				"DebugPanel: Game start requested (WebSocket server doesn't need this)"
+			);
 		} catch (error) {
 			console.error("Failed to start game:", error);
 		}
 	}
 
 	private simulateEnemyPlaceCard(): void {
-		console.log("Debug: Simulating enemy place card action");
-
-		// Simply trigger the server-side enemy action
-		// The server will handle card selection and placement logic
-		const serverAPI = this._gameController.serverAPI;
-		serverAPI.debugForceEnemyAction();
+		console.log(
+			"Debug: Enemy actions are handled by the actual opponent player"
+		);
+		// In multiplayer, we don't simulate enemy actions - they come from real players
 	}
 
 	private simulateEnemyPassTurn(): void {
-		const serverAPI = this._gameController.serverAPI;
-		serverAPI.debugForceEnemyPass();
+		console.log("Debug: Enemy pass is handled by the actual opponent player");
+		// In multiplayer, we don't simulate enemy pass - they come from real players
 	}
 }

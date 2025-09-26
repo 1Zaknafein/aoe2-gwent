@@ -6,6 +6,8 @@ import {
 	PixiGraphics,
 } from "../../plugins/engine";
 import { ANTIALIAS_FILTER } from "../../shared/constant/Constants";
+import { CardFaceTextures } from "../../shared/database/CardFaceTextures.js";
+import gsap from "gsap";
 
 export class Card extends PixiContainer {
 	private _cardData: CardData;
@@ -31,7 +33,9 @@ export class Card extends PixiContainer {
 		this._cardBack.visible = false;
 		this.addChild(this._cardBack);
 
-		this._cardFace = PixiSprite.from(this._cardData.faceTexture);
+		// Get face texture from card ID using CardFaceTextures
+		const faceTexture = CardFaceTextures.getTexture(this._cardData.id);
+		this._cardFace = PixiSprite.from(faceTexture);
 		this._cardFace.anchor.set(0.5);
 		this._cardFace.visible = true;
 		this._cardFace.scale.set(0.5);
@@ -118,7 +122,9 @@ export class Card extends PixiContainer {
 	public updateCardData(newCardData: CardData): void {
 		this._cardData = newCardData;
 
-		this._cardFace.texture = PixiSprite.from(newCardData.faceTexture).texture;
+		// Get face texture from card ID using CardFaceTextures
+		const faceTexture = CardFaceTextures.getTexture(newCardData.id);
+		this._cardFace.texture = PixiSprite.from(faceTexture).texture;
 
 		this._scoreText.text = newCardData.score.toString();
 
@@ -135,28 +141,25 @@ export class Card extends PixiContainer {
 			// First update the card data while it's still showing back
 			this.updateCardData(newCardData);
 
-			// Import gsap for animation
-			import("gsap").then(({ gsap }) => {
-				// Animate scale to 0 (flip effect)
-				gsap.to(this.scale, {
-					x: 0,
-					duration: 0.15,
-					ease: "power2.in",
-					onComplete: () => {
-						// Switch to front view at the middle of animation
-						this.showFront();
+			// Animate scale to 0 (flip effect)
+			gsap.to(this.scale, {
+				x: 0,
+				duration: 0.15,
+				ease: "power2.in",
+				onComplete: () => {
+					// Switch to front view at the middle of animation
+					this.showFront();
 
-						// Animate scale back to 1
-						gsap.to(this.scale, {
-							x: 1,
-							duration: 0.15,
-							ease: "power2.out",
-							onComplete: () => {
-								resolve();
-							},
-						});
-					},
-				});
+					// Animate scale back to 1
+					gsap.to(this.scale, {
+						x: 1,
+						duration: 0.15,
+						ease: "power2.out",
+						onComplete: () => {
+							resolve();
+						},
+					});
+				},
 			});
 		});
 	}
@@ -202,6 +205,5 @@ export interface CardData {
 	id: number;
 	name: string;
 	score: number;
-	faceTexture: string;
 	type: CardType;
 }

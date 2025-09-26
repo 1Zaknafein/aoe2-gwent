@@ -1,4 +1,11 @@
 import { EventEmitter } from "pixi.js";
+import { CardData } from "../types/CardData";
+
+export enum ActionType {
+	PLACE_CARD = "place_card",
+	PASS_TURN = "pass_turn",
+	DRAW_CARD = "draw_card",
+}
 
 /**
  * Game Flow States - represents what the game is currently doing
@@ -35,19 +42,29 @@ export interface GameState {
 }
 
 export interface ServerResponse {
-	type: "game_state_update" | "enemy_action" | "deck_data";
+	type: "game_state_update" | "enemy_action" | "deck_data" | "game_started";
 	gameState?: GameState;
 	action?: {
-		type: string;
+		type: ActionType;
 		cardId?: number;
 		targetRow?: "melee" | "ranged" | "siege";
 		playerId: "player" | "enemy";
 	};
-	playerHand?: number[];
+	playerHand?: CardData[];
+	playerName?: string;
+	enemyName?: string;
+	isHost?: boolean;
+}
+
+export interface PlayerAction {
+	type: ActionType;
+	cardId?: number;
+	targetRow?: "melee" | "ranged" | "siege";
+	playerId: "player";
 }
 
 /**
- * Improved GameStateManager using State Machine pattern
+ * Game Flow Manager using State Machine pattern
  *
  * This class:
  * 1. Manages the current flow state (what the game is doing right now)
@@ -106,6 +123,9 @@ export class GameFlowManager extends EventEmitter {
 				break;
 			case "enemy_action":
 				await this.handleEnemyAction(response);
+				break;
+			case "game_started":
+				this.handleGameStartedMessage(response);
 				break;
 		}
 	}
@@ -175,6 +195,20 @@ export class GameFlowManager extends EventEmitter {
 
 			await this.showMessagesAndTransition(messages);
 		}
+	}
+
+	/**
+	 * Handle game started message (player names)
+	 */
+	private handleGameStartedMessage(response: ServerResponse): void {
+		console.log("🎮 GameFlowManager handling game started:", response);
+
+		// Emit player names for the GameController to handle
+		this.emit("playerNamesReceived", {
+			playerName: response.playerName,
+			enemyName: response.enemyName,
+			isHost: response.isHost,
+		});
 	}
 
 	/**

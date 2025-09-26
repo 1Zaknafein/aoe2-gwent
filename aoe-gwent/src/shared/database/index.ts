@@ -1,1 +1,1 @@
-export { CardDatabase } from "./CardDatabase";
+export { CardFaceTextures } from "./CardFaceTextures";

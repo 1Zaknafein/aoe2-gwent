@@ -1,7 +1,10 @@
 import { PixiContainer, PixiSprite } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
-import { CardContainerManager, CardType } from "../../entities/card";
-import { ScoreDisplay, DebugPanel, MessageDisplay } from "../components";
+import { CardContainerManager } from "../../entities/card";
+import { CardType } from "../../shared/types/CardTypes";
+import { ScoreDisplay, MessageDisplay } from "../components";
+// DebugPanel commented out - only needed for fake server testing
+// import { DebugPanel } from "../components";
 import { CardInteractionManager } from "../managers";
 import {
 	PlayerDisplayManager,
@@ -9,9 +12,9 @@ import {
 } from "../../entities/player";
 import { Sprite } from "pixi.js";
 import { GameController } from "../../shared/game";
-import type { EnemyCardPlacedEvent } from "../../shared/game";
+// Remove unused import
+// import type { EnemyCardPlacedEvent } from "../../shared/game";
 import { GamePhase, GameState } from "../../shared/game/GameFlowManager";
-import { CardDatabase } from "../../shared/database";
 
 export class GameScene extends PixiContainer implements SceneInterface {
 	private _gameBoard: Sprite;
@@ -24,7 +27,8 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 	private _scoreDisplay!: ScoreDisplay;
 	private _playerDisplayManager!: PlayerDisplayManager;
-	private _debugPanel!: DebugPanel;
+	// Debug panel disabled for WebSocket server
+	// private _debugPanel!: DebugPanel;
 	private _messageDisplay!: MessageDisplay;
 
 	constructor() {
@@ -228,6 +232,12 @@ export class GameScene extends PixiContainer implements SceneInterface {
 				console.log("Could not connect to server - using debug mode");
 			}
 		});
+
+		// Listen for player names to update displays
+		this._gameController.on("playerNamesReceived", (data) => {
+			console.log("🎮 Received player names:", data);
+			this.updatePlayerNames(data.playerName, data.enemyName);
+		});
 	}
 
 	private handleGameStateChange(gameState: GameState): void {
@@ -244,8 +254,11 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	private createDebugPanel(): void {
-		this._debugPanel = new DebugPanel(this._gameController);
-		this.addChild(this._debugPanel);
+		// DebugPanel is only for fake ServerAPI testing
+		// Since we're using WebSocket server, debug panel is disabled
+		// this._debugPanel = new DebugPanel(this._gameController);
+		// this.addChild(this._debugPanel);
+		console.log("Debug panel disabled - using WebSocket server");
 	}
 
 	private createMessageDisplay(): void {
@@ -322,19 +335,8 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 			playerHand.removeAllCards();
 
-			// Convert card IDs to card data objects
-			const cardDataArray = data.playerHand
-				.map((cardId: number) => {
-					const cardData = CardDatabase.getCardById(cardId);
-					if (!cardData) {
-						console.error(
-							`[GameScene] Card with ID ${cardId} not found in database`
-						);
-						return null;
-					}
-					return cardData;
-				})
-				.filter((cardData: any) => cardData !== null);
+			// data.playerHand should already be CardData[] from server
+			const cardDataArray = data.playerHand;
 
 			playerHand.addCardsBatch(cardDataArray);
 		} else {
@@ -398,6 +400,18 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		console.log(
 			`[GameScene] Score validation passed - Player: ${serverPlayerScore}, Enemy: ${serverEnemyScore}`
 		);
+	}
+
+	/**
+	 * Update player names in the display
+	 */
+	private updatePlayerNames(playerName: string, enemyName: string): void {
+		console.log(
+			`🎮 Updating player names: Player="${playerName}", Enemy="${enemyName}"`
+		);
+		if (this._playerDisplayManager) {
+			this._playerDisplayManager.updatePlayerNames(playerName, enemyName);
+		}
 	}
 
 	/**

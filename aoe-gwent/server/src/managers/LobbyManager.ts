@@ -2,9 +2,10 @@ import { v4 as uuidv4 } from "uuid";
 import { Room, Player, GameSessionData } from "../types/index.js";
 
 /**
- * Manages game rooms and players
+ * Manages lobby functionality: rooms, players, ready states
+ * Extracted from GameServer for clean separation of concerns
  */
-export class RoomManager {
+export class LobbyManager {
 	private rooms: Map<string, Room> = new Map();
 	private playerRooms: Map<string, string> = new Map(); // playerId -> roomId
 
@@ -162,7 +163,7 @@ export class RoomManager {
 	}
 
 	/**
-	 * Start game in room
+	 * Start game in room (mark as started and create session data)
 	 */
 	public startGame(roomId: string): GameSessionData[] | null {
 		const room = this.rooms.get(roomId);
@@ -204,7 +205,7 @@ export class RoomManager {
 	}
 
 	/**
-	 * Get all available rooms
+	 * Get all available rooms (not started games)
 	 */
 	public getAllRooms(): Room[] {
 		return Array.from(this.rooms.values()).filter(

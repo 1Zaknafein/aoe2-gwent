@@ -304,4 +304,61 @@ export class GameWebSocketClient {
 	public getRooms(): boolean {
 		return this.send("lobby:get_rooms", {});
 	}
+
+	/**
+	 * Reconnect to an active game session
+	 */
+	public reconnectToGame(roomId: string, playerId: string): boolean {
+		return this.send("game:reconnect", { roomId, playerId });
+	}
+
+	/**
+	 * Initialize connection and reconnect to game using session storage
+	 * This method is specifically for game.html to restore connection
+	 */
+	public async initGameConnection(): Promise<boolean> {
+		try {
+			// Load session data stored by lobby
+			const connectionData = sessionStorage.getItem("playerConnection");
+
+			if (!connectionData) {
+				console.error("No player connection data found - redirecting to lobby");
+				window.location.href = "lobby.html";
+				return false;
+			}
+
+			const { roomId, playerId } = JSON.parse(connectionData);
+
+			// Connect to WebSocket first
+			const connected = await this.connect();
+			if (!connected) {
+				console.error("Failed to connect to server");
+				return false;
+			}
+
+			// Wait a moment for connection to be established
+			await new Promise((resolve) => setTimeout(resolve, 100));
+
+			// Send reconnection message to restore game session
+			const sent = this.reconnectToGame(roomId, playerId);
+			if (!sent) {
+				console.error("Failed to send reconnection message");
+				return false;
+			}
+
+			console.log("🎮 Game reconnection initiated");
+			return true;
+		} catch (error) {
+			console.error("Failed to initialize game connection:", error);
+			window.location.href = "lobby.html";
+			return false;
+		}
+	}
+
+	/**
+	 * Get current connection status
+	 */
+	public get status(): ConnectionStatus {
+		return this.connectionStatus;
+	}
 }

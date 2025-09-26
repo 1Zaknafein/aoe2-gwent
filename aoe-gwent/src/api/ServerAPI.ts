@@ -4,7 +4,7 @@ import {
 	ActionType,
 	GameState,
 	GamePhase,
-} from "../shared/game/GameStateManager";
+} from "../shared/game/GameFlowManager";
 import { CardDatabase } from "../shared/database";
 
 /**

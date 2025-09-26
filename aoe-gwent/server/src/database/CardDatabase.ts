@@ -1,51 +1,52 @@
-import { CardData, CardType } from "../../entities/card";
+import { CardType } from "../shared/types/CardTypes";
+
+export interface ServerCardData {
+	id: number;
+	name: string;
+	score: number;
+	type: CardType;
+}
 
 /**
- * Card database that stores card definitions.
- * This simulates what would eventually come from a server.
+ * Server-side card database that stores card definitions.
+ * Does not include client-specific rendering data like faceTexture.
  */
 export class CardDatabase {
-	private static readonly cards: CardData[] = [
+	private static readonly cards: ServerCardData[] = [
 		{
 			id: 1,
 			name: "Knight",
 			score: 5,
-			faceTexture: "knight",
 			type: CardType.MELEE,
 		},
 		{
 			id: 2,
 			name: "Crossbowman",
 			score: 3,
-			faceTexture: "crossbowman",
 			type: CardType.RANGED,
 		},
 		{
 			id: 3,
 			name: "Mangonel",
 			score: 8,
-			faceTexture: "mangonel",
 			type: CardType.SIEGE,
 		},
 		{
 			id: 4,
 			name: "Light Cavalry",
 			score: 3,
-			faceTexture: "light_cavalry",
 			type: CardType.MELEE,
 		},
 		{
 			id: 5,
 			name: "Teutonic Knight",
 			score: 10,
-			faceTexture: "teutonic_knight",
 			type: CardType.MELEE,
 		},
 		{
 			id: 6,
 			name: "Archer",
 			score: 2,
-			faceTexture: "archer",
 			type: CardType.RANGED,
 		},
 	];
@@ -53,21 +54,20 @@ export class CardDatabase {
 	/**
 	 * Generate card data from a list of card IDs.
 	 * @param cardIds Array of card IDs to fetch
-	 * @returns Array of CardData corresponding to the IDs
+	 * @returns Array of ServerCardData corresponding to the IDs
 	 */
-	public static generateCardsFromIds(cardIds: number[]): CardData[] {
-		const cardDataList: CardData[] = [];
+	public static generateCardsFromIds(cardIds: number[]): ServerCardData[] {
+		const cardDataList: ServerCardData[] = [];
 
 		for (const id of cardIds) {
 			const cardData = this.cards.find((card) => card.id === id);
 
 			if (cardData) {
 				// Return a copy to avoid reference issues
-				const cardCopy: CardData = {
+				const cardCopy: ServerCardData = {
 					id: cardData.id,
 					name: cardData.name,
 					score: cardData.score,
-					faceTexture: cardData.faceTexture,
 					type: cardData.type,
 				};
 
@@ -83,9 +83,9 @@ export class CardDatabase {
 	/**
 	 * Get a single card by ID.
 	 * @param id Card ID to fetch
-	 * @returns CardData if found, undefined otherwise
+	 * @returns ServerCardData if found, undefined otherwise
 	 */
-	public static getCardById(id: number): CardData | undefined {
+	public static getCardById(id: number): ServerCardData | undefined {
 		const cardData = this.cards.find((card) => card.id === id);
 
 		if (cardData) {
@@ -94,7 +94,6 @@ export class CardDatabase {
 				id: cardData.id,
 				name: cardData.name,
 				score: cardData.score,
-				faceTexture: cardData.faceTexture,
 				type: cardData.type,
 			};
 		}
