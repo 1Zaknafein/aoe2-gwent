@@ -482,6 +482,5 @@ export class TestBoardScene extends PixiContainer implements SceneInterface {
 		this.gameBoard.x = offsetX;
 		this.gameBoard.y = offsetY;
 
-		console.log(`📐 Resized to ${screenWidth}x${screenHeight}, scale: ${scale.toFixed(2)}`);
 	}
 }

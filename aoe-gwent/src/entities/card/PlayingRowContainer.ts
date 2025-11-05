@@ -193,23 +193,14 @@ export class PlayingRowContainer extends CardContainer {
 	 * Update the score display based on cards in the row
 	 */
 	public updateScore(): void {
-		const oldScore = this.currentScore;
 		let newScore = 0;
+
 		this.getAllCards().forEach(card => {
 			newScore += card.cardData.score;
 		});
 
-		// Animate count up/down from old score to new score
-		const scoreObj = { value: oldScore };
-		gsap.to(scoreObj, {
-			value: newScore,
-			duration: 0.5,
-			ease: "power2.out",
-			onUpdate: () => {
-				this.scoreText.text = Math.round(scoreObj.value).toString();
-			}
-		});
-
+		
+		this.scoreText.text = newScore.toString();
 		this.currentScore = newScore;
 	}
 
