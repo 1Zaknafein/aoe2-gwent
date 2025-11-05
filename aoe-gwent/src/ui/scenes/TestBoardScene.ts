@@ -230,8 +230,8 @@ export class TestBoardScene extends PixiContainer implements SceneInterface {
 		const config: PlayerDisplayManagerConfig = {
 			playerName: "PLAYER",
 			enemyName: "OPPONENT",
-			playerPosition: { x: -20, y: 1050 },
-			enemyPosition: { x: -20, y: 40 },
+			playerPosition: { x: -20, y: 950 },
+			enemyPosition: { x: -20, y: 200 },
 		};
 
 		this.playerDisplayManager = new PlayerDisplayManager(config);

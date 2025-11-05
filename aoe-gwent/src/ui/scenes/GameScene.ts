@@ -142,8 +142,8 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		const config: PlayerDisplayManagerConfig = {
 			playerName: "PLAYER",
 			enemyName: "ENEMY",
-			playerPosition: { x: 25, y: 1050 },
-			enemyPosition: { x: 25, y: 40 },
+			playerPosition: { x: 25, y: 950 },
+			enemyPosition: { x: 25, y: 200 },
 			gameController: this._gameController,
 		};
 
