@@ -1,14 +1,14 @@
 import { PixiContainer } from "../../plugins/engine";
 import { PlayerDisplay, PlayerDisplayData } from "./PlayerDisplay";
 import { CardContainer } from "../card";
-import { GameController } from "../../shared/game";
+import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export interface PlayerDisplayManagerConfig {
 	playerName: string;
 	enemyName: string;
 	playerPosition: { x: number; y: number };
 	enemyPosition: { x: number; y: number };
-	gameController?: GameController;
+	gameController?: LocalGameController;
 }
 
 export class PlayerDisplayManager extends PixiContainer {

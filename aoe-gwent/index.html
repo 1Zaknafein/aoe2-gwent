@@ -3,23 +3,12 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/logo/ts-logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AoE Card Game</title>
 </head>
 
 <body>
   <div id="app">
-    <!-- Redirect to lobby if no specific route -->
-    <script>
-      // Simple redirect to lobby unless starting game
-      const urlParams = new URLSearchParams(window.location.search);
-      const isDirect = urlParams.get('game') || urlParams.get('direct');
-
-      if (window.location.pathname === '/' && !isDirect) {
-        window.location.href = '/lobby.html';
-      }
-    </script>
     <canvas id="pixi-screen"></canvas>
   </div>
   <script type="module" src="/src/main.ts"></script>

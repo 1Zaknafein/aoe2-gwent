@@ -1,20 +1,22 @@
 import { Card } from "../../entities/card/Card";
 import { PlayingRowContainer, HandContainer } from "../../entities/card";
 import { CardType } from "../../shared/types/CardTypes";
+import { LocalGameController } from "../../shared/game/LocalGameController";
 import { gsap } from "gsap";
 
 /**
  * Manages all user interactions for the TestBoardScene
  * Handles card selection, hover effects, and placement logic
  */
-export class TestBoardInteractionManager {
+export class GameBoardInteractionManager {
 	private selectedCard: Card | null = null;
 	private cardClickInProgress: boolean = false;
+	private gameController:  LocalGameController | null = null;
 
 	// References to containers
 	private playerHand: HandContainer;
 	private playerMeleeRow: PlayingRowContainer;
-	private playerRangedRow: PlayingRowContainer;
+	private playerRangedRow: PlayingRowContainer; 
 	private playerSiegeRow: PlayingRowContainer;
 
 	constructor(
@@ -27,6 +29,13 @@ export class TestBoardInteractionManager {
 		this.playerMeleeRow = playerMeleeRow;
 		this.playerRangedRow = playerRangedRow;
 		this.playerSiegeRow = playerSiegeRow;
+	}
+
+	/**
+	 * Set the GameController for multiplayer interactions
+	 */
+	public setGameController(gameController: LocalGameController): void {
+		this.gameController = gameController;
 	}
 
 	/**
@@ -157,38 +166,46 @@ export class TestBoardInteractionManager {
 		this.clearRowHighlights();
 
 		this.selectedCard = null;
-		console.log(`❌ Deselected card`);
 	}
 
 	private async placeSelectedCard(targetRow: PlayingRowContainer): Promise<void> {
 		if (!this.selectedCard) return;
 
-		// Check if the target row can accept this card type
 		if (!targetRow.canAcceptCard(this.selectedCard)) {
-			console.log(`❌ ${this.selectedCard.cardData.name} cannot be placed in ${targetRow.label}`);
 			return;
 		}
 
-		const cardIndex = this.playerHand.getAllCards().indexOf(this.selectedCard);
-		if (cardIndex === -1) return;
+		const cardId = this.selectedCard.cardData.id;
 
-		console.log(`✅ Placing ${this.selectedCard.cardData.name} in ${targetRow.label}`);
+		let targetRowName: "melee" | "ranged" | "siege";
+this
+		if (targetRow === this.playerMeleeRow) {
+			targetRowName = "melee";
+		} else if (targetRow === this.playerRangedRow) {
+			targetRowName = "ranged";
+		} else if (targetRow === this.playerSiegeRow) {
+			targetRowName = "siege";
+		} else {
+			return;
+		}
 
-		// Clear row highlights
 		this.clearRowHighlights();
 
-		// Clear selection before transfer
 		this.selectedCard = null;
 
-		// Animate card from hand to row
-		await this.playerHand.transferCardTo(cardIndex, targetRow);
+		if (this.gameController) {
+			this.gameController.placeCard(cardId, targetRowName);
+		} else {
+			const cardIndex = this.playerHand.getAllCards().findIndex(c => c.cardData.id === cardId);
+			if (cardIndex === -1) return;
 
-		// Update score using PlayingRowContainer's method
-		targetRow.updateScore();
+			await this.playerHand.transferCardTo(cardIndex, targetRow);
+
+			targetRow.updateScore();
+		}
 	}
 
 	private highlightValidRows(cardType: CardType): void {
-		// Determine which row can accept this card type
 		let validRow: PlayingRowContainer | null = null;
 
 		switch (cardType) {
@@ -205,12 +222,10 @@ export class TestBoardInteractionManager {
 
 		if (!validRow) return;
 
-		// Use PlayingRowContainer's built-in highlight method
 		validRow.showHighlight();
 	}
 
 	private clearRowHighlights(): void {
-		// Clear highlights from all player rows
 		[this.playerMeleeRow, this.playerRangedRow, this.playerSiegeRow].forEach((row) => {
 			row.hideHighlight();
 		});

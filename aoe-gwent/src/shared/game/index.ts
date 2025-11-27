@@ -1,13 +1,8 @@
-export {
-	GameFlowManager,
-	GameFlowState,
-	GamePhase,
-	ActionType,
-} from "./GameFlowManager";
-export { GameController } from "./GameController";
-export type {
-	GameState,
-	ServerResponse,
-	PlayerAction,
-} from "./GameFlowManager";
-export type { EnemyCardPlacedEvent } from "./GameController";
+// Export local game controller
+export { LocalGameController } from "./LocalGameController";
+
+// Export state machine
+export { GameManager } from "./GameManager";
+export { GameStateMachine } from "./GameStateMachine";
+export { GameState, StateName } from "./states/GameState";
+export * from "./states";

@@ -1,6 +1,6 @@
 /**
  * Game state and types for individual game sessions
- * Adapted from the existing GameStateManager types
+ * Ported from server/src/game/GameTypes.ts
  */
 
 export enum GamePhase {
@@ -25,6 +25,7 @@ export interface GameState {
 	passedPlayers: Set<string>; // playerIds who have passed
 	startingPlayer: string; // playerId who started the game
 	handSizes: Map<string, number>; // playerId -> hand size
+	gameStarted: boolean; // flag to prevent duplicate game:start messages
 }
 
 export interface PlayerAction {

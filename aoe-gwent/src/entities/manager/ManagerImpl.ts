@@ -34,7 +34,7 @@ export class ManagerImpl {
 		ManagerImpl.resizeBackground();
 
 		ManagerImpl._app.panel.resize(ManagerImpl.resize);
-		ManagerImpl._app.ticker?.add(ManagerImpl.update);
+
 	}
 
 	static changeScene(newScene: SceneInterface): void {
@@ -48,11 +48,7 @@ export class ManagerImpl {
 		ManagerImpl._app?.stage?.addChild(ManagerImpl._currentScene);
 	}
 
-	private static update(framesPassed: number): void {
-		if (ManagerImpl._currentScene) {
-			ManagerImpl._currentScene.update(framesPassed);
-		}
-	}
+
 
 	private static resize(): void {
 		ManagerImpl.resizeBackground();

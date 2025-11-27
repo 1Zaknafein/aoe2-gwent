@@ -1,10 +1,4 @@
 export interface SceneInterface {
-    /** update scene
-     * 
-     * @param framesPassed 
-     */
-    update(framesPassed: number): void;
-
     /** resize scene
      * 
      * @param screenWidth 

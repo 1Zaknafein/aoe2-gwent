@@ -22,7 +22,6 @@ export class PlayingRowContainer extends CardContainer {
 	private typeIcon: PixiSprite;
 	private scoreText: Text;
 	private config: PlayingRowConfig;
-	private currentScore: number = 0;
 
 	constructor(config: PlayingRowConfig) {
 		super(
@@ -49,6 +48,58 @@ export class PlayingRowContainer extends CardContainer {
 
 		// Cards are not interactive by default in playing rows
 		this.setCardsInteractive(false);
+	}
+
+		/**
+	 * Show the highlight overlay
+	 */
+	public showHighlight(): void {
+		// Kill any existing animations first to prevent conflicts
+		gsap.killTweensOf(this.highlightOverlay);
+		
+		this.highlightOverlay.visible = true;
+		this.highlightOverlay.alpha = 0.4;
+	}
+
+	/**
+	 * Hide the highlight overlay
+	 */
+	public hideHighlight(): void {
+		gsap.killTweensOf(this.highlightOverlay);
+
+		gsap.to(this.highlightOverlay, {
+			alpha: 0,
+			duration: 0.2,
+			ease: "power2.out",
+			onComplete: () => {
+				this.highlightOverlay.visible = false;
+			}
+		});
+	}
+
+	/**
+	 * Update the score display based on cards in the row
+	 */
+	public updateScore(): void {
+		let newScore = 0;
+
+		this.getAllCards().forEach(card => {
+			newScore += card.cardData.score;
+		});
+
+		
+		this.scoreText.text = newScore.toString();
+	}
+
+	/**
+	 * Get the current score
+	 */
+	public getScore(): number {
+		let totalScore = 0;
+		this.getAllCards().forEach(card => {
+			totalScore += card.cardData.score;
+		});
+		return totalScore;
 	}
 
 	private createBackground(): PixiGraphics {
@@ -161,57 +212,5 @@ export class PlayingRowContainer extends CardContainer {
 		return score;
 	}
 
-	/**
-	 * Show the highlight overlay
-	 */
-	public showHighlight(): void {
-		// Kill any existing animations first to prevent conflicts
-		gsap.killTweensOf(this.highlightOverlay);
-		
-		this.highlightOverlay.visible = true;
-		this.highlightOverlay.alpha = 0.4;
-	}
 
-	/**
-	 * Hide the highlight overlay
-	 */
-	public hideHighlight(): void {
-		// Kill any existing animations first
-		gsap.killTweensOf(this.highlightOverlay);
-
-		gsap.to(this.highlightOverlay, {
-			alpha: 0,
-			duration: 0.2,
-			ease: "power2.out",
-			onComplete: () => {
-				this.highlightOverlay.visible = false;
-			}
-		});
-	}
-
-	/**
-	 * Update the score display based on cards in the row
-	 */
-	public updateScore(): void {
-		let newScore = 0;
-
-		this.getAllCards().forEach(card => {
-			newScore += card.cardData.score;
-		});
-
-		
-		this.scoreText.text = newScore.toString();
-		this.currentScore = newScore;
-	}
-
-	/**
-	 * Get the current score
-	 */
-	public getScore(): number {
-		let totalScore = 0;
-		this.getAllCards().forEach(card => {
-			totalScore += card.cardData.score;
-		});
-		return totalScore;
-	}
 }

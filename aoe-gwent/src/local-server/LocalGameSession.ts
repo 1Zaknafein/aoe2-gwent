@@ -4,68 +4,74 @@ import {
 	GamePhase,
 	ActionType,
 	PlayerAction,
-} from "./GameTypes.js";
-import { CardDatabase } from "../database/CardDatabase.js";
+} from "./GameTypes";
+import { CardDatabase } from "./CardDatabase";
+import { TurnManager } from "./TurnManager";
+import { RoundManager } from "./RoundManager";
+import { ScoreCalculator } from "./ScoreCalculator";
 
 /**
- * Manages an individual game session between two players
- * Handles game logic, turn management, scoring, etc.
- * Extracted and adapted from ServerAPI's fake server logic
+ * LocalGameSession - Manages a local game session (player vs bot)
+ * This is a client-side adaptation of GameSessionInstance
+ * Handles all game logic locally without WebSocket communication
  */
-export class GameSessionInstance {
+export class LocalGameSession {
 	private session: GameSession;
+	private turnManager: TurnManager;
+	private roundManager: RoundManager;
+	private scoreCalculator: ScoreCalculator;
+	private onStateChange?: (state: GameState) => void;
 
 	constructor(
-		roomId: string,
-		player1Id: string,
-		player1Name: string,
-		player2Id: string,
-		player2Name: string
+		playerId: string,
+		playerName: string,
+		botId: string = "bot",
+		botName: string = "Bot Opponent"
 	) {
-		// Player 1 is always the host (who created the room)
-		// Player 2 is the one who joined
-		console.log(
-			`🎮 Creating game session: Player 1 (Host): ${player1Name}, Player 2: ${player2Name}`
-		);
+		// Initialize manager classes
+		this.turnManager = new TurnManager([playerId, botId], playerId);
+		this.roundManager = new RoundManager([playerId, botId]);
+		this.scoreCalculator = new ScoreCalculator();
 
 		// Initialize the game session
 		this.session = {
-			roomId,
-			playerIds: [player1Id, player2Id],
+			roomId: "local-game",
+			playerIds: [playerId, botId],
 			playerNames: new Map([
-				[player1Id, player1Name],
-				[player2Id, player2Name],
+				[playerId, playerName],
+				[botId, botName],
 			]),
 			gameState: {
 				phase: GamePhase.WAITING_FOR_GAME_START,
-				currentTurn: player1Id, // Player 1 (host) always starts first
+				currentTurn: playerId,
 				roundNumber: 1,
 				scores: new Map([
-					[player1Id, 0],
-					[player2Id, 0],
+					[playerId, 0],
+					[botId, 0],
 				]),
 				passedPlayers: new Set(),
-				startingPlayer: player1Id, // Host is starting player
+				startingPlayer: playerId,
 				handSizes: new Map([
-					[player1Id, 0],
-					[player2Id, 0],
+					[playerId, 0],
+					[botId, 0],
 				]),
+				gameStarted: false,
 			},
 			playerHands: new Map([
-				[player1Id, []],
-				[player2Id, []],
+				[playerId, []],
+				[botId, []],
 			]),
 			playerDecks: new Map([
-				[player1Id, []],
-				[player2Id, []],
+				[playerId, []],
+				[botId, []],
 			]),
 			playerBoards: new Map([
-				[player1Id, { melee: [], ranged: [], siege: [] }],
-				[player2Id, { melee: [], ranged: [], siege: [] }],
+				[playerId, { melee: [], ranged: [], siege: [] }],
+				[botId, { melee: [], ranged: [], siege: [] }],
 			]),
 			playerDiscards: new Map([
-				[player1Id, []],
-				[player2Id, []],
+				[playerId, []],
+				[botId, []],
 			]),
 			isGameStarted: false,
 			createdAt: new Date(),
@@ -73,8 +79,23 @@ export class GameSessionInstance {
 	}
 
 	/**
+	 * Set callback for state changes
+	 */
+	public onGameStateChange(callback: (state: GameState) => void): void {
+		this.onStateChange = callback;
+	}
+
+	/**
+	 * Notify listeners of state change
+	 */
+	private notifyStateChange(): void {
+		if (this.onStateChange) {
+			this.onStateChange(this.getGameState());
+		}
+	}
+
+	/**
 	 * Get player number (1 or 2) for a given player ID
-	 * Player 1 is always the host, Player 2 joined the room
 	 */
 	public getPlayerNumber(playerId: string): 1 | 2 | null {
 		const playerIndex = this.session.playerIds.indexOf(playerId);
@@ -93,10 +114,10 @@ export class GameSessionInstance {
 	}
 
 	/**
-	 * Check if a player is the host (Player 1)
+	 * Check if a player is the bot
 	 */
-	public isHost(playerId: string): boolean {
-		return this.session.playerIds[0] === playerId;
+	public isBot(playerId: string): boolean {
+		return this.session.playerIds[1] === playerId;
 	}
 
 	/**
@@ -107,31 +128,22 @@ export class GameSessionInstance {
 			throw new Error("Game already started");
 		}
 
-		// Generate random decks for both players (simplified - using card IDs 1-6)
-		const allCardIds = [1, 2, 3, 4, 5, 6];
-
+		// Generate random decks for both players
 		for (const playerId of this.session.playerIds) {
-			// Create deck with duplicates allowed
-			const deck: number[] = [];
-			for (let i = 0; i < 10; i++) {
-				const randomCard =
-					allCardIds[Math.floor(Math.random() * allCardIds.length)];
-				deck.push(randomCard);
-			}
+			const deck = CardDatabase.generateRandomDeck(10);
+			const hand = deck.slice(0, 10); // Deal all 10 cards initially
 
-			// Deal initial hand (first 5 cards)
-			const hand = deck.slice(0, 5);
-			const remainingDeck = deck.slice(5);
-
-			this.session.playerDecks.set(playerId, remainingDeck);
+			this.session.playerDecks.set(playerId, []);
 			this.session.playerHands.set(playerId, hand);
 			this.session.gameState.handSizes.set(playerId, hand.length);
 		}
 
 		this.session.isGameStarted = true;
 		this.session.gameState.phase = GamePhase.PLAYER_TURN;
+		this.session.gameState.gameStarted = true;
 
-		console.log(`Game session started for room ${this.session.roomId}`);
+		console.log(`Local game session started`);
+		this.notifyStateChange();
 	}
 
 	/**
@@ -160,10 +172,11 @@ export class GameSessionInstance {
 			};
 		}
 
-		if (this.session.gameState.currentTurn !== action.playerId) {
+		// Check if player can act (their turn and not passed)
+		if (!this.turnManager.canPlayerAct(action.playerId)) {
 			return {
 				success: false,
-				error: "Not your turn",
+				error: "Not your turn or you have already passed",
 				gameStateChanged: false,
 			};
 		}
@@ -190,6 +203,7 @@ export class GameSessionInstance {
 		error?: string;
 		gameStateChanged: boolean;
 		roundEnded?: boolean;
+		gameEnded?: boolean;
 	} {
 		if (!action.cardId || !action.targetRow) {
 			return {
@@ -227,25 +241,33 @@ export class GameSessionInstance {
 		// Update hand size
 		this.session.gameState.handSizes.set(action.playerId, playerHand.length);
 
-		// Player is no longer passed (if they were)
-		this.session.gameState.passedPlayers.delete(action.playerId);
-
 		console.log(
 			`Player ${action.playerId} placed card ${action.cardId} on ${action.targetRow}`
 		);
 
-		// Check if opponent has passed
-		const opponentId = this.getOpponent(action.playerId);
-		const opponentPassed = this.session.gameState.passedPlayers.has(opponentId);
-
-		if (opponentPassed) {
-			// Opponent already passed, check if round should end
-			return { success: true, gameStateChanged: true, roundEnded: false };
-		} else {
-			// Switch turn to opponent
-			this.switchTurn();
-			return { success: true, gameStateChanged: true, roundEnded: false };
+		// Auto-pass if player has no cards left
+		const autoPassTriggered = this.turnManager.autoPass(
+			action.playerId,
+			playerHand.length
+		);
+		if (autoPassTriggered) {
+			this.session.gameState.passedPlayers.add(action.playerId);
+			console.log(`Player ${action.playerId} auto-passed (no cards left)`);
 		}
+
+		// Check if both players have passed -> end round
+		if (this.turnManager.haveBothPlayersPassed()) {
+			const result = this.endRound();
+			this.notifyStateChange();
+			return result;
+		}
+
+		// Switch turn (placing card automatically ends turn)
+		this.turnManager.switchTurn();
+		this.session.gameState.currentTurn = this.turnManager.getCurrentTurn();
+
+		this.notifyStateChange();
+		return { success: true, gameStateChanged: true, roundEnded: false };
 	}
 
 	/**
@@ -257,18 +279,24 @@ export class GameSessionInstance {
 		roundEnded?: boolean;
 		gameEnded?: boolean;
 	} {
-		// Mark player as passed
+		// Mark player as passed in TurnManager
+		this.turnManager.markPlayerPassed(action.playerId);
+
+		// Sync with session state
 		this.session.gameState.passedPlayers.add(action.playerId);
 
 		console.log(`Player ${action.playerId} passed`);
 
 		// Check if both players have passed
-		if (this.session.gameState.passedPlayers.size === 2) {
-			// Round ends
-			return this.endRound();
+		if (this.turnManager.haveBothPlayersPassed()) {
+			const result = this.endRound();
+			this.notifyStateChange();
+			return result;
 		} else {
 			// Switch turn to opponent
-			this.switchTurn();
+			this.turnManager.switchTurn();
+			this.session.gameState.currentTurn = this.turnManager.getCurrentTurn();
+			this.notifyStateChange();
 			return { success: true, gameStateChanged: true, roundEnded: false };
 		}
 	}
@@ -282,44 +310,35 @@ export class GameSessionInstance {
 		roundEnded: boolean;
 		gameEnded?: boolean;
 	} {
-		// Calculate scores for each player
-		const roundScores = new Map<string, number>();
+		// Calculate scores using ScoreCalculator
+		const scores = this.scoreCalculator.calculateScores(
+			this.session.playerBoards
+		);
 
-		for (const playerId of this.session.playerIds) {
-			const board = this.session.playerBoards.get(playerId)!;
-			const score = this.calculateBoardScore(board);
-			roundScores.set(playerId, score);
-		}
-
-		// Determine round winner
 		const [player1Id, player2Id] = this.session.playerIds;
-		const player1Score = roundScores.get(player1Id)!;
-		const player2Score = roundScores.get(player2Id)!;
+		const player1Score = scores.get(player1Id) || 0;
+		const player2Score = scores.get(player2Id) || 0;
 
-		if (player1Score > player2Score) {
-			const currentScore = this.session.gameState.scores.get(player1Id)! + 1;
-			this.session.gameState.scores.set(player1Id, currentScore);
-			console.log(
-				`Round ${this.session.gameState.roundNumber}: ${player1Id} wins`
-			);
-		} else if (player2Score > player1Score) {
-			const currentScore = this.session.gameState.scores.get(player2Id)! + 1;
-			this.session.gameState.scores.set(player2Id, currentScore);
-			console.log(
-				`Round ${this.session.gameState.roundNumber}: ${player2Id} wins`
-			);
-		} else {
-			console.log(`Round ${this.session.gameState.roundNumber}: Tie`);
-		}
+		console.log(
+			`Round ${this.roundManager.getCurrentRound()}: Player=${player1Score}, Bot=${player2Score}`
+		);
+
+		// Determine winner and record round result
+		const winnerId = this.scoreCalculator.determineWinner(scores);
+		const roundResult = this.roundManager.recordRoundWinner(winnerId);
+
+		// Update session state with new round wins
+		const roundWins = this.roundManager.getAllRoundWins();
+		this.session.gameState.scores.set(player1Id, roundWins.player1);
+		this.session.gameState.scores.set(player2Id, roundWins.player2);
 
 		// Set round end phase
 		this.session.gameState.phase = GamePhase.ROUND_END;
 
-		// Check if game should end (best of 3)
-		const maxScore = Math.max(...this.session.gameState.scores.values());
-		if (maxScore >= 2) {
+		// Check if game is over
+		if (roundResult.gameEnded) {
 			this.session.gameState.phase = GamePhase.GAME_END;
-			console.log("Game ended!");
+			console.log(`Game ended! Winner: ${roundResult.gameWinner}`);
 			return {
 				success: true,
 				gameStateChanged: true,
@@ -354,60 +373,27 @@ export class GameSessionInstance {
 			board.siege = [];
 		}
 
-		// Reset passed players
+		// Determine who starts next round (loser of previous round)
+		const roundWins = this.roundManager.getAllRoundWins();
+		const [player1Id, player2Id] = this.session.playerIds;
+		const startingPlayer =
+			roundWins.player1 < roundWins.player2 ? player1Id : player2Id;
+
+		// Reset turn manager for new round
+		this.turnManager.resetRound(startingPlayer);
+
+		// Update session state
+		this.session.gameState.roundNumber = this.roundManager.getCurrentRound();
+		this.session.gameState.startingPlayer = startingPlayer;
+		this.session.gameState.currentTurn = this.turnManager.getCurrentTurn();
 		this.session.gameState.passedPlayers.clear();
-
-		// Increment round number
-		this.session.gameState.roundNumber++;
-
-		// Switch starting player for next round
-		const currentStarter = this.session.gameState.startingPlayer;
-		const newStarter = this.getOpponent(currentStarter);
-		this.session.gameState.startingPlayer = newStarter;
-		this.session.gameState.currentTurn = newStarter;
-
-		// Set phase to new round
 		this.session.gameState.phase = GamePhase.PLAYER_TURN;
 
 		console.log(
-			`Starting round ${this.session.gameState.roundNumber}, ${newStarter} goes first`
+			`Starting round ${this.session.gameState.roundNumber}, ${startingPlayer} goes first`
 		);
-	}
 
-	/**
-	 * Calculate total score for a player's board
-	 */
-	private calculateBoardScore(board: {
-		melee: number[];
-		ranged: number[];
-		siege: number[];
-	}): number {
-		// Simple scoring - each card has base value equal to its ID
-		// In real implementation, you'd look up card stats from database
-		let totalScore = 0;
-
-		[...board.melee, ...board.ranged, ...board.siege].forEach((cardId) => {
-			totalScore += cardId; // Simplified: card ID = card score
-		});
-
-		return totalScore;
-	}
-
-	/**
-	 * Switch turn to the other player
-	 */
-	private switchTurn(): void {
-		const currentPlayerId = this.session.gameState.currentTurn;
-		const opponentId = this.getOpponent(currentPlayerId);
-		this.session.gameState.currentTurn = opponentId;
-	}
-
-	/**
-	 * Get the opponent of a given player
-	 */
-	private getOpponent(playerId: string): string {
-		const [player1Id, player2Id] = this.session.playerIds;
-		return playerId === player1Id ? player2Id : player1Id;
+		this.notifyStateChange();
 	}
 
 	/**
@@ -459,31 +445,27 @@ export class GameSessionInstance {
 	 * Get player IDs
 	 */
 	public getPlayerIds(): [string, string] {
-		return [...this.session.playerIds];
+		return [...this.session.playerIds] as [string, string];
 	}
 
 	/**
-	 * Get complete game state for a specific player
-	 * Includes player number, role, and all relevant game data
+	 * Get complete game data for the human player
 	 */
-	public getGameStateForPlayer(playerId: string) {
+	public getGameDataForPlayer(playerId: string) {
 		const playerNumber = this.getPlayerNumber(playerId);
 		const opponentId = this.getOpponentId(playerId);
-		const isHost = this.isHost(playerId);
 
 		if (!playerNumber || !opponentId) {
 			return null;
 		}
 
-		// Convert card IDs to complete card data
+		// Get player hand
 		const playerHandIds = this.session.playerHands.get(playerId) || [];
-		const playerHandData = CardDatabase.generateCardsFromIds(playerHandIds);
 
 		return {
 			// Player identity
 			playerId,
 			playerNumber,
-			isHost,
 			playerName: this.session.playerNames.get(playerId),
 
 			// Opponent identity
@@ -502,7 +484,7 @@ export class GameSessionInstance {
 			},
 
 			// Player's private data
-			playerHand: playerHandData,
+			playerHand: playerHandIds,
 
 			// Public board data (visible to all)
 			boards: {
@@ -513,7 +495,6 @@ export class GameSessionInstance {
 			// Metadata
 			roomId: this.session.roomId,
 			isGameStarted: this.session.isGameStarted,
-			timestamp: new Date().toISOString(),
 		};
 	}
 }

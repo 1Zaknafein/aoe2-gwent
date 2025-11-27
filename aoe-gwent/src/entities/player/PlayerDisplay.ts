@@ -6,7 +6,7 @@ import {
 import { PixiContainer } from "../../plugins/engine";
 import { CardContainer } from "../card";
 import { PassButton } from "../../ui/components";
-import { GameController } from "../../shared/game";
+import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export class PlayerDisplay extends PixiContainer {
 	public playerNameText!: Text;
@@ -23,7 +23,7 @@ export class PlayerDisplay extends PixiContainer {
 	private _currentHandCount = 0;
 	private _currentTotalScore = 0;
 	private _watchedContainers: CardContainer[] = [];
-	private _gameController?: GameController;
+	private _gameController?: LocalGameController;
 
 	constructor(data: PlayerDisplayData) {
 		super();
@@ -270,10 +270,15 @@ export class PlayerDisplay extends PixiContainer {
 
 	private async onPassButtonClick(): Promise<void> {
 		if (this._gameController) {
-			if (!this._gameController.canPlayerAct) {
+			if (!this._gameController.canPlayerAct()) {
+				console.log("Cannot pass - not your turn or already passed");
 				return;
 			}
-			await this._gameController.sendPassTurn();
+			try {
+				await this._gameController.passTurn();
+			} catch (error) {
+				console.error("Failed to pass turn:", error);
+			}
 		}
 	}
 
@@ -295,5 +300,5 @@ export interface PlayerDisplayData {
 	playerName: string;
 	isEnemy?: boolean;
 	position: { x: number; y: number };
-	gameController?: GameController; // Optional - only needed for player (not enemy)
+	gameController?: LocalGameController; // Optional - only needed for player (not enemy)
 }
