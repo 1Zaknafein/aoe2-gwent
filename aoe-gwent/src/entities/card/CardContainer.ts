@@ -1,4 +1,4 @@
-import { FederatedPointerEvent, Graphics } from "pixi.js";
+import { FederatedPointerEvent } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
 import { Card, CardData, CardType } from "../card";
 import { gsap } from "gsap";
@@ -14,11 +14,11 @@ export class CardContainer extends PixiContainer {
 	private _cardSpacing: number = 5;
 	private _isAnimating: boolean = false;
 	private _activeTransfers: Set<GSAPTween> = new Set();
-	private _boundsRect: Graphics | null = null;
 	private _isContainerInteractive: boolean = false;
 	private _areCardsInteractive: boolean = true;
 	private _containerType: CardType | null = null;
 	private _layoutType: CardContainerLayoutType = CardContainerLayoutType.SPREAD;
+	protected _cardScale: number = 1.0; // Default card scale, can be overridden by subclasses
 
 	/**
 	 * Create a new CardContainer.
@@ -26,20 +26,21 @@ export class CardContainer extends PixiContainer {
 	 * @param label Label for the container.
 	 * @param containerType Optional type restriction for this container
 	 * @param layoutType Optional layout type for card positioning behavior
+	 * @param cardScale Optional scale for cards in this container (default: 1.0)
 	 */
 	constructor(
 		maxWidth: number,
 		label: string,
 		containerType?: CardType,
-		layoutType?: CardContainerLayoutType
+		layoutType?: CardContainerLayoutType,
+		cardScale?: number
 	) {
 		super();
 		this._maxWidth = maxWidth;
 		this.label = label;
 		this._containerType = containerType || null;
 		this._layoutType = layoutType || CardContainerLayoutType.SPREAD;
-
-		this.createBoundsRect();
+		this._cardScale = cardScale ?? 1.0;
 	}
 
 	public get cardCount(): number {
@@ -153,6 +154,9 @@ export class CardContainer extends PixiContainer {
 		const card = new Card(cardData);
 		this._cards.push(card);
 		this.addChild(card);
+
+		// Apply container's card scale
+		card.scale.set(this._cardScale);
 
 		// Apply current interactivity settings to the new card
 		card.eventMode = this._areCardsInteractive ? "static" : "none";
@@ -298,6 +302,9 @@ export class CardContainer extends PixiContainer {
 			this._cards.push(card);
 			this.addChild(card);
 
+			// Apply container's card scale
+			card.scale.set(this._cardScale);
+
 			card.eventMode = this._areCardsInteractive ? "static" : "none";
 			card.cursor = this._areCardsInteractive ? "pointer" : "default";
 
@@ -332,22 +339,6 @@ export class CardContainer extends PixiContainer {
 	public setPosition(x: number, y: number): void {
 		this.x = x;
 		this.y = y;
-		this.updateBoundsRect();
-	}
-
-	private createBoundsRect(): void {
-		this._boundsRect = new Graphics();
-		this._boundsRect.alpha = 0;
-		this.addChild(this._boundsRect);
-		this.updateBoundsRect();
-	}
-
-	private updateBoundsRect(): void {
-		if (!this._boundsRect) return;
-
-		this._boundsRect.clear();
-		this._boundsRect.rect(-this._maxWidth / 2, -110, this._maxWidth, 230);
-		this._boundsRect.fill({});
 	}
 
 	public setContainerInteractive(interactive: boolean): void {
@@ -388,7 +379,10 @@ export class CardContainer extends PixiContainer {
 		const sourceScale = this.scale.x;
 		const targetScale = targetContainer.scale.x;
 
-		const baseCardScale = 1;
+		// Use source container's card scale
+		const sourceCardScale = this._cardScale;
+		// Use target container's card scale
+		const targetCardScale = targetContainer._cardScale;
 
 		// Calculate where this card will be positioned in the target container
 		const targetCardIndex = targetContainer._cards.length; // This will be the new card's index
@@ -412,8 +406,9 @@ export class CardContainer extends PixiContainer {
 		this.emit("cardRemoved", { card: cardToTransfer, container: this });
 
 		return new Promise<void>((resolve) => {
-			// Calculate target scale relative to this container
-			const targetVisualScale = (baseCardScale * targetScale) / sourceScale;
+			// Calculate target visual scale:
+			// Target card scale * target container scale / source container scale
+			const targetVisualScale = (targetCardScale * targetScale) / (sourceCardScale * sourceScale);
 
 			const tweenDuration = 0.4;
 
@@ -425,8 +420,8 @@ export class CardContainer extends PixiContainer {
 			});
 
 			const scaleTween = gsap.to(cardToTransfer.scale, {
-				x: targetVisualScale,
-				y: targetVisualScale,
+				x: targetVisualScale * sourceCardScale,
+				y: targetVisualScale * sourceCardScale,
 				duration: tweenDuration,
 				ease: "power2.inOut",
 				onComplete: () => {
@@ -440,10 +435,10 @@ export class CardContainer extends PixiContainer {
 						finalCardIndex
 					);
 
-					// Position the card at final position and restore base scale
+					// Position the card at final position and set target container's card scale
 					cardToTransfer.x = finalPos.x;
 					cardToTransfer.y = finalPos.y;
-					cardToTransfer.scale.set(baseCardScale);
+					cardToTransfer.scale.set(targetCardScale);
 
 					targetContainer._cards.push(cardToTransfer);
 					targetContainer.addChild(cardToTransfer);

@@ -1,6 +1,6 @@
 import { Card, CardContainer, CardContainerManager } from "../../entities/card";
 import { gsap } from "gsap";
-import { GameController } from "../../shared/game";
+import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export class CardInteractionManager {
 	private _cardContainers: CardContainerManager;
@@ -8,11 +8,11 @@ export class CardInteractionManager {
 	private _cardClickInProgress: boolean = false;
 	private _lastClickTime: number = 0;
 	private _lastClickedCard: Card | null = null;
-	private _gameController?: GameController;
+	private _gameController?:  LocalGameController;
 
 	constructor(
 		cardContainers: CardContainerManager,
-		gameController?: GameController
+		gameController?:  LocalGameController
 	) {
 		this._cardContainers = cardContainers;
 		this._gameController = gameController;
@@ -86,7 +86,7 @@ export class CardInteractionManager {
 	 */
 	public updateCardInteractivity(): void {
 		const canAct = this._gameController
-			? this._gameController.canPlayerAct
+			? this._gameController.canPlayerAct()
 			: true;
 
 		// Update player hand cards
@@ -257,8 +257,8 @@ export class CardInteractionManager {
 		}
 
 		this._gameController
-			.sendPlayerAction(cardId, targetRowName)
-			.catch((error) => {
+			.placeCard(cardId, targetRowName)
+			.catch((error: any) => {
 				console.error("Failed to send player action:", error);
 			});
 	}

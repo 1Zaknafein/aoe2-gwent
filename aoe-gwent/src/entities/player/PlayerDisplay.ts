@@ -1,31 +1,29 @@
 import {
 	Text,
 	TextStyle,
-	Sprite,
 	Graphics,
-	FillGradient,
-	Color,
 } from "pixi.js";
-import { PixiContainer, PixiAssets } from "../../plugins/engine";
+import { PixiContainer } from "../../plugins/engine";
 import { CardContainer } from "../card";
-import { ANTIALIAS_FILTER } from "../../shared/constant/Constants";
 import { PassButton } from "../../ui/components";
-import { GameController } from "../../shared/game";
+import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export class PlayerDisplay extends PixiContainer {
 	public playerNameText!: Text;
 	public totalScoreText!: Text;
 	public handCountText!: Text;
-	public healthIcon1!: Sprite;
-	public healthIcon2!: Sprite;
-	public scoreBackground!: Graphics;
+	public scoreLabel!: Text;
+	public handLabel!: Text;
+	public roundWin1!: Graphics;
+	public roundWin2!: Graphics;
+	public displayBackground!: Graphics;
 	public passButton?: PassButton;
 
 	private _isEnemy: boolean;
 	private _currentHandCount = 0;
 	private _currentTotalScore = 0;
 	private _watchedContainers: CardContainer[] = [];
-	private _gameController?: GameController;
+	private _gameController?: LocalGameController;
 
 	constructor(data: PlayerDisplayData) {
 		super();
@@ -35,15 +33,16 @@ export class PlayerDisplay extends PixiContainer {
 
 		this.position.set(data.position.x, data.position.y);
 
+		this.createDisplayBackground();
 		this.createTextStyles();
-		this.createScoreBackground();
 		this.createTextElements(data.playerName);
-		this.createHealthIcons();
+		this.createRoundWinIndicators();
 
-		// Only create pass button for player
 		if (!this._isEnemy && this._gameController) {
 			this.createPassButton();
 		}
+
+		this.positionElements();
 	}
 
 	public get handCount(): number {
@@ -58,94 +57,53 @@ export class PlayerDisplay extends PixiContainer {
 		return this._isEnemy;
 	}
 
-	/**
-	 * Helper method to position score background and text together
-	 */
-	public setScorePosition(x: number, y: number): void {
-		this.scoreBackground.position.set(x, y);
-		this.totalScoreText.position.set(x + 2, y); // Offset for shadow
-	}
-
-	/**
-	 * Helper method to position health icons side by side
-	 */
-	public setHealthIconsPosition(
-		x: number,
-		y: number,
-		spacing: number = 30
-	): void {
-		this.healthIcon1.position.set(x - spacing / 2, y);
-		this.healthIcon2.position.set(x + spacing / 2, y);
-	}
-
-	/**
-	 * Update the player's name display.
-	 */
 	public setPlayerName(name: string): void {
 		this.playerNameText.text = name;
 	}
 
-	/**
-	 * Update the hand count display.
-	 */
 	public setHandCount(count: number): void {
 		this._currentHandCount = count;
 		this.handCountText.text = count.toString();
 	}
 
-	/**
-	 * Manually set the total score.
-	 */
 	public setTotalScore(score: number): void {
 		this._currentTotalScore = score;
 		this.totalScoreText.text = score.toString();
 	}
 
-	/**
-	 * Position all display elements based on whether this is a player or enemy display.
-	 * Uses different positioning logic for player vs enemy.
-	 */
-	public positionElements(): void {
-		if (this._isEnemy) {
-			this.positionEnemyElements();
-		} else {
-			this.positionPlayerElements();
-		}
+	public setRoundWins(roundsWon: number): void {
+		// Update visual state of gems based on rounds won (0, 1, or 2)
+		this.roundWin1.clear();
+		this.roundWin2.clear();
+
+		const gem1Won = roundsWon >= 1;
+		const gem2Won = roundsWon >= 2;
+
+		this.drawRoundGem(this.roundWin1, gem1Won);
+		this.drawRoundGem(this.roundWin2, gem2Won);
 	}
 
-	/**
-	 * Position elements for the player display.
-	 */
-	private positionPlayerElements(): void {
-		this.handCountText.position.set(200, 115);
+	public positionElements(): void {
+		const padding = 20;
+		const bgWidth = 400;
+		const bgHeight = 180;
 
-		this.totalScoreText.position.set(422, 155);
-		this.scoreBackground.position = this.totalScoreText.position;
+		this.playerNameText.position.set(bgWidth / 2, padding + 15);
 
-		this.healthIcon1.position.set(160, 200);
-		this.healthIcon2.position.set(205, 200);
+		this.roundWin1.position.set(45, 70);
+		this.roundWin2.position.set(105, 70);
+
+		this.scoreLabel.position.set(bgWidth / 2, 65);
+		this.totalScoreText.position.set(bgWidth / 2, 105);
+
+		this.handLabel.position.set(bgWidth - 60, 65);
+		this.handCountText.position.set(bgWidth - 60, 100);
 
 		if (this.passButton) {
-			this.passButton.position.set(260, 185);
+			this.passButton.position.set(bgWidth / 2, bgHeight - 35);
 		}
 	}
 
-	/**
-	 * Position elements for the enemy display.
-	 */
-	private positionEnemyElements(): void {
-		this.totalScoreText.position.set(422, 110);
-		this.scoreBackground.position = this.totalScoreText.position;
-		this.handCountText.position.set(200, 165);
-
-		this.healthIcon1.position.set(160, 80);
-		this.healthIcon2.position.set(205, 80);
-	}
-
-	/**
-	 * Watch card containers to automatically update total score.
-	 * @param containers Array of CardContainer instances to watch
-	 */
 	public watchContainers(containers: CardContainer[]): void {
 		this.unwatchContainers();
 
@@ -183,24 +141,24 @@ export class PlayerDisplay extends PixiContainer {
 	private createTextStyles(): void {
 		const nameStyle = new TextStyle({
 			fontFamily: "Arial",
-			fontSize: 28,
+			fontSize: 26,
 			fontWeight: "bold",
-			fill: this._isEnemy ? 0xe24a4a : 0x4a90e2,
-			stroke: { color: 0x000000, width: 2 },
+			fill: 0xf4e4c1,
+			stroke: { color: 0x000000, width: 3 },
 		});
 
 		const scoreStyle = new TextStyle({
 			fontFamily: "Arial",
 			fontSize: 60,
 			fontWeight: "bold",
-			fill: "#ffd500",
-			stroke: { color: "#000000", width: 1 },
+			fill: "#ffd700",
+			stroke: { color: "#000000", width: 3 },
 			dropShadow: {
 				distance: 2,
 				angle: 1.5,
 				blur: 2,
 				color: "#000000",
-				alpha: 1,
+				alpha: 0.8,
 			},
 		});
 
@@ -208,8 +166,16 @@ export class PlayerDisplay extends PixiContainer {
 			fontFamily: "Arial",
 			fontSize: 40,
 			fontWeight: "bold",
-			fill: "#fccb81",
-			stroke: { color: "#000000", width: 1 },
+			fill: "#d4af37",
+			stroke: { color: "#000000", width: 3 },
+		});
+
+		const labelStyle = new TextStyle({
+			fontFamily: "Arial",
+			fontSize: 16,
+			fontWeight: "bold",
+			fill: 0xb8a27a,
+			stroke: { color: 0x000000, width: 2 },
 		});
 
 		this.playerNameText = new Text({
@@ -229,51 +195,72 @@ export class PlayerDisplay extends PixiContainer {
 			style: handCountStyle,
 			anchor: 0.5,
 		});
+
+		this.scoreLabel = new Text({
+			text: "SCORE",
+			style: labelStyle,
+			anchor: 0.5,
+		});
+
+		this.handLabel = new Text({
+			text: "CARDS",
+			style: labelStyle,
+			anchor: 0.5,
+		});
 	}
 
 	private createTextElements(playerName: string): void {
 		this.playerNameText.text = playerName;
 
 		this.addChild(this.playerNameText);
+		this.addChild(this.scoreLabel);
 		this.addChild(this.totalScoreText);
+		this.addChild(this.handLabel);
 		this.addChild(this.handCountText);
 	}
 
-	private createScoreBackground(): void {
-		this.scoreBackground = new Graphics();
+	private createDisplayBackground(): void {
+		const width = 400;
+		const height = 180;
+		
+		this.displayBackground = new Graphics();
 
-		const radius = 50;
+		this.displayBackground.rect(0, 0, width, height);
+		this.displayBackground.fill({ color: 0x3d2817, alpha: 0.9 });
 
-		const gradient = new FillGradient(0, 0, 0, radius / 2)
-			.addColorStop(0, new Color("#00b6b3"))
-			.addColorStop(1, new Color("#0079c0"));
+		this.displayBackground.stroke({ color: 0x8b6914, width: 4, alpha: 0.8 });
+		this.displayBackground.rect(4, 4, width - 8, height - 8);
+		this.displayBackground.stroke({ color: 0xd4af37, width: 2, alpha: 0.6 });
 
-		this.scoreBackground.circle(0, 0, radius);
-		this.scoreBackground.fill(gradient);
+		const innerBorder = 12;
+		this.displayBackground.rect(innerBorder, innerBorder, width - innerBorder * 2, height - innerBorder * 2);
+		this.displayBackground.stroke({ color: 0x5a3d1f, width: 1, alpha: 0.5 });
 
-		this.scoreBackground.circle(0, 0, radius);
-		this.scoreBackground.stroke({
-			color: 0x000000,
-			width: 2,
-			alpha: 1,
-		});
-
-		this.scoreBackground.filters = [ANTIALIAS_FILTER];
-
-		this.addChild(this.scoreBackground);
+		this.addChild(this.displayBackground);
 	}
 
-	private createHealthIcons(): void {
-		const healthTexture = PixiAssets.get("health_gold");
+	private createRoundWinIndicators(): void {
+		this.roundWin1 = new Graphics();
+		this.roundWin2 = new Graphics();
 
-		this.healthIcon1 = new Sprite(healthTexture);
-		this.healthIcon1.anchor.set(0.5);
+		this.addChild(this.roundWin1);
+		this.addChild(this.roundWin2);
 
-		this.healthIcon2 = new Sprite(healthTexture);
-		this.healthIcon2.anchor.set(0.5);
+		// Set initial state - 1 round won for testing
+		this.setRoundWins(1);
+	}
 
-		this.addChild(this.healthIcon1);
-		this.addChild(this.healthIcon2);
+	private drawRoundGem(gem: Graphics, isWon: boolean): void {
+		const size = 18;
+
+		gem.circle(0, 0, size);
+		if (isWon) {
+			gem.fill({ color: 0xffd700, alpha: 1 });
+			gem.stroke({ color: 0xd4af37, width: 3, alpha: 1 });
+		} else {
+			gem.fill({ color: 0x2a2013, alpha: 0.5 });
+			gem.stroke({ color: 0x5a3d1f, width: 2, alpha: 0.6 });
+		}
 	}
 
 	private createPassButton(): void {
@@ -283,10 +270,15 @@ export class PlayerDisplay extends PixiContainer {
 
 	private async onPassButtonClick(): Promise<void> {
 		if (this._gameController) {
-			if (!this._gameController.canPlayerAct) {
+			if (!this._gameController.canPlayerAct()) {
+				console.log("Cannot pass - not your turn or already passed");
 				return;
 			}
-			await this._gameController.sendPassTurn();
+			try {
+				await this._gameController.passTurn();
+			} catch (error) {
+				console.error("Failed to pass turn:", error);
+			}
 		}
 	}
 
@@ -308,5 +300,5 @@ export interface PlayerDisplayData {
 	playerName: string;
 	isEnemy?: boolean;
 	position: { x: number; y: number };
-	gameController?: GameController; // Optional - only needed for player (not enemy)
+	gameController?: LocalGameController; // Optional - only needed for player (not enemy)
 }
