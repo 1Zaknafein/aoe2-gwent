@@ -51,10 +51,8 @@ export class GameStateMachine {
 		while (this.isRunning && this.currentState && this.currentStateName) {
 			console.log(`\nCurrent State: ${this.currentStateName}`);
 
-			// Execute current state and get next state name
 			const nextStateName = await this.currentState.execute();
 
-			// Validate transition
 			if (!this.isValidTransition(this.currentStateName, nextStateName)) {
 				console.error(
 					`Invalid state transition: ${this.currentStateName} -> ${nextStateName}`
@@ -63,13 +61,14 @@ export class GameStateMachine {
 				break;
 			}
 
-			console.log(`➡️ Transitioning: ${this.currentStateName} -> ${nextStateName}`);
+			console.log(`Transitioning: ${this.currentStateName} -> ${nextStateName}`);
 			
-			// Get next state from map
 			const nextState = this.states.get(nextStateName);
+
 			if (!nextState) {
 				console.error(`State not found in map: ${nextStateName}`);
 				this.stop();
+				
 				break;
 			}
 

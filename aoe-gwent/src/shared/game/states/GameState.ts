@@ -26,4 +26,15 @@ export abstract class GameState {
 	 * Returns the name of the next state to transition to
 	 */
 	abstract execute(): Promise<StateName>;
+
+	/**
+	 * Utility to delay execution for a given number of seconds
+	 * @param seconds Number of seconds to delay
+	 * @returns Promise that resolves after the delay
+	 */
+	protected async delay(seconds: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+	}
+
 }
+

@@ -9,11 +9,12 @@ import { CardDealingManager } from "../../../ui/managers/CardDealingManager";
  * - Sets up round-specific state
  */
 export class RoundStartState extends GameState {
-  private cardDealingManager: CardDealingManager | null;
+  private cardDealingManager: CardDealingManager
 
-  constructor(gameManager: GameManager, cardDealingManager?: CardDealingManager) {
+  constructor(gameManager: GameManager, cardDealingManager: CardDealingManager) {
     super(gameManager);
-    this.cardDealingManager = cardDealingManager || null;
+    
+    this.cardDealingManager = cardDealingManager;
   }
 
   public async execute(): Promise<StateName> {
@@ -21,19 +22,18 @@ export class RoundStartState extends GameState {
       `[RoundStartState] Starting round ${this.gameManager.getCurrentRound()}...`
     );
 
-    // Get game session
     const gameSession = this.gameManager.getGameSession();
+
     if (!gameSession) {
       throw new Error("Game session not initialized");
     }
 
-    // Start the game if not already started (deals cards)
     const gameState = gameSession.getGameState();
+
     if (!gameState.gameStarted) {
       console.log("[RoundStartState] Starting game - dealing cards...");
       gameSession.startGame();
 
-      // Deal cards to UI
       if (this.cardDealingManager) {
         const playerId = this.gameManager.getPlayerId();
         const gameData = gameSession.getGameDataForPlayer(playerId);
@@ -42,6 +42,7 @@ export class RoundStartState extends GameState {
           const opponentId = gameSession.getOpponentId(playerId);
           const opponentData = opponentId ? gameSession.getGameDataForPlayer(opponentId) : null;
           
+          await this.delay(0.1);
           this.cardDealingManager.dealCards(
             gameData.playerHand,
             opponentData?.playerHand || []
