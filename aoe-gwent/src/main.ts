@@ -20,17 +20,13 @@ import { RoundEndState } from "./shared/game/states/RoundEndState";
 import { ResolutionState } from "./shared/game/states/ResolutionState";
 
 const boostsrap = async () => {
-  const canvas = document.getElementById("pixi-screen") as HTMLCanvasElement;
-  const resizeTo = window;
-  const resolution = window.devicePixelRatio || 1;
-  const autoDensity = true;
-  const backgroundColor = 0x1a1410;
   const appOptions: Partial<IPixiApplicationOptions> = {
-    canvas,
-    resizeTo,
-    resolution,
-    autoDensity,
-    backgroundColor,
+    antialias: true,
+    resizeTo: window,
+    autoDensity: true,
+    backgroundColor: 0x1a1410,
+    resolution: window.devicePixelRatio || 1,
+    canvas: document.getElementById("pixi-screen") as HTMLCanvasElement,
   };
 
   const application = new App();
@@ -55,12 +51,10 @@ const boostsrap = async () => {
         gameScene.getOpponentHand()
       );
 
+      // prettier-ignore
       const states = new Map([
         [StateName.SETUP, new SetupState(gameManager)],
-        [
-          StateName.GAME_START,
-          new GameStartState(gameManager, cardDealingManager),
-        ],
+        [StateName.GAME_START, new GameStartState(gameManager, cardDealingManager)],
         [StateName.ROUND_START, new RoundStartState(gameManager)],
         [StateName.PLAYER_ACTION, new PlayerActionState(gameManager)],
         [StateName.ENEMY_ACTION, new EnemyActionState(gameManager)],
