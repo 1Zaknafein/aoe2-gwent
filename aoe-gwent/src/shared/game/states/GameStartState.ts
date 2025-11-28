@@ -37,6 +37,10 @@ export class GameStartState extends GameState {
       opponentData?.playerHand || []
     );
 
+    // Disable player input initially - will be enabled in PlayerActionState
+    const playerHand = this.cardDealingManager.getPlayerHand();
+    playerHand.setCardsInteractive(false);
+
     console.log("[GameStartState] Game started successfully");
 
     return StateName.ROUND_START;

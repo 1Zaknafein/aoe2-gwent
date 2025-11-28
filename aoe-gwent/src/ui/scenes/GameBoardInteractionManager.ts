@@ -9,225 +9,238 @@ import { gsap } from "gsap";
  * Handles card selection, hover effects, and placement logic
  */
 export class GameBoardInteractionManager {
-	private selectedCard: Card | null = null;
-	private cardClickInProgress: boolean = false;
-	private gameController:  LocalGameController | null = null;
+  private selectedCard: Card | null = null;
+  private cardClickInProgress: boolean = false;
+  private gameController: LocalGameController | null = null;
 
-	// References to containers
-	private playerHand: HandContainer;
-	private playerMeleeRow: PlayingRowContainer;
-	private playerRangedRow: PlayingRowContainer; 
-	private playerSiegeRow: PlayingRowContainer;
+  // References to containers
+  private playerHand: HandContainer;
+  private playerMeleeRow: PlayingRowContainer;
+  private playerRangedRow: PlayingRowContainer;
+  private playerSiegeRow: PlayingRowContainer;
 
-	constructor(
-		playerHand: HandContainer,
-		playerMeleeRow: PlayingRowContainer,
-		playerRangedRow: PlayingRowContainer,
-		playerSiegeRow: PlayingRowContainer
-	) {
-		this.playerHand = playerHand;
-		this.playerMeleeRow = playerMeleeRow;
-		this.playerRangedRow = playerRangedRow;
-		this.playerSiegeRow = playerSiegeRow;
-	}
+  constructor(
+    playerHand: HandContainer,
+    playerMeleeRow: PlayingRowContainer,
+    playerRangedRow: PlayingRowContainer,
+    playerSiegeRow: PlayingRowContainer
+  ) {
+    this.playerHand = playerHand;
+    this.playerMeleeRow = playerMeleeRow;
+    this.playerRangedRow = playerRangedRow;
+    this.playerSiegeRow = playerSiegeRow;
+  }
 
-	/**
-	 * Set the GameController for multiplayer interactions
-	 */
-	public setGameController(gameController: LocalGameController): void {
-		this.gameController = gameController;
-	}
+  /**
+   * Set the GameController for multiplayer interactions
+   */
+  public setGameController(gameController: LocalGameController): void {
+    this.gameController = gameController;
+  }
 
-	/**
-	 * Set up card interactions for all cards in player hand
-	 */
-	public setupPlayerHandInteractions(): void {
-		this.playerHand.getAllCards().forEach((card) => {
-			this.setupCardInteractions(card);
-		});
-	}
+  /**
+   * Set up card interactions for all cards in player hand
+   */
+  public setupPlayerHandInteractions(): void {
+    this.playerHand.getAllCards().forEach((card) => {
+      this.setupCardInteractions(card);
+    });
 
-	/**
-	 * Set up interactions for a single card
-	 */
-	public setupCardInteractions(card: Card): void {
-		card.on('pointerenter', () => this.onCardHover(card, true));
-		card.on('pointerleave', () => this.onCardHover(card, false));
-		card.on('pointerup', (event) => this.onCardClick(card, event));
-	}
+    // Listen for new cards being added to the hand
+    this.playerHand.on("cardAdded", (data) => {
+      if (data.card && data.container === this.playerHand) {
+        this.setupCardInteractions(data.card);
+      }
+    });
+  }
 
-	/**
-	 * Set up row click handlers for placing cards
-	 */
-	public setupRowInteractions(): void {
-		const playableRows = [
-			this.playerMeleeRow,
-			this.playerRangedRow,
-			this.playerSiegeRow,
-		];
+  /**
+   * Set up interactions for a single card
+   */
+  public setupCardInteractions(card: Card): void {
+    card.on("pointerenter", () => this.onCardHover(card, true));
+    card.on("pointerleave", () => this.onCardHover(card, false));
+    card.on("pointerup", (event) => this.onCardClick(card, event));
+  }
 
-		playableRows.forEach((row) => {
-			row.setContainerInteractive(true);
-			row.on('containerClick', () => {
-				if (this.selectedCard) {
-					this.placeSelectedCard(row);
-				}
-			});
-		});
-	}
+  /**
+   * Set up row click handlers for placing cards
+   */
+  public setupRowInteractions(): void {
+    const playableRows = [
+      this.playerMeleeRow,
+      this.playerRangedRow,
+      this.playerSiegeRow,
+    ];
 
-	/**
-	 * Handle global click to deselect cards
-	 */
-	public handleGlobalClick(): void {
-		if (this.cardClickInProgress) {
-			return;
-		}
+    playableRows.forEach((row) => {
+      row.setContainerInteractive(true);
+      row.on("containerClick", () => {
+        if (this.selectedCard) {
+          this.placeSelectedCard(row);
+        }
+      });
+    });
+  }
 
-		// Deselect when clicking anywhere else
-		setTimeout(() => {
-			if (!this.cardClickInProgress) {
-				this.deselectCard();
-			}
-		}, 50);
-	}
+  /**
+   * Handle global click to deselect cards
+   */
+  public handleGlobalClick(): void {
+    if (this.cardClickInProgress) {
+      return;
+    }
 
-	private onCardHover(card: Card, isHovering: boolean): void {
-		// Only apply hover effects to cards in player hand
-		if (card.parent !== this.playerHand) return;
+    // Deselect when clicking anywhere else
+    setTimeout(() => {
+      if (!this.cardClickInProgress) {
+        this.deselectCard();
+      }
+    }, 50);
+  }
 
-		// Don't apply hover effects to selected cards
-		if (this.selectedCard === card) return;
+  private onCardHover(card: Card, isHovering: boolean): void {
+    // Only apply hover effects to cards in player hand
+    if (card.parent !== this.playerHand) return;
 
-		const targetY = isHovering ? -12 : 0;
-		const duration = 0.2;
+    // Don't apply hover effects to selected cards
+    if (this.selectedCard === card) return;
 
-		gsap.to(card, {
-			y: targetY,
-			duration,
-			ease: "power2.out",
-		});
-	}
+    const targetY = isHovering ? -12 : 0;
+    const duration = 0.2;
 
-	private onCardClick(card: Card, event: any): void {
-		event.stopPropagation(); // Prevent global click handler
+    gsap.to(card, {
+      y: targetY,
+      duration,
+      ease: "power2.out",
+    });
+  }
 
-		// Only allow selection of cards in player hand
-		if (card.parent !== this.playerHand) {
-			return;
-		}
+  private onCardClick(card: Card, event: any): void {
+    event.stopPropagation(); // Prevent global click handler
 
-		this.cardClickInProgress = true;
+    // Only allow selection of cards in player hand
+    if (card.parent !== this.playerHand) {
+      return;
+    }
 
-		if (this.selectedCard === card) {
-			this.deselectCard();
-		} else {
-			this.selectCard(card);
-		}
+    this.cardClickInProgress = true;
 
-		setTimeout(() => {
-			this.cardClickInProgress = false;
-		}, 150);
-	}
+    if (this.selectedCard === card) {
+      this.deselectCard();
+    } else {
+      this.selectCard(card);
+    }
 
-	private selectCard(card: Card): void {
-		if (this.selectedCard) {
-			this.deselectCard();
-		}
+    setTimeout(() => {
+      this.cardClickInProgress = false;
+    }, 150);
+  }
 
-		this.selectedCard = card;
+  private selectCard(card: Card): void {
+    if (this.selectedCard) {
+      this.deselectCard();
+    }
 
-		// Lift card up
-		gsap.to(card, {
-			y: -30,
-			duration: 0.1,
-			ease: "power2.out",
-		});
+    this.selectedCard = card;
 
-		// Highlight valid placement rows
-		this.highlightValidRows(card.cardData.type);
+    // Lift card up
+    gsap.to(card, {
+      y: -30,
+      duration: 0.1,
+      ease: "power2.out",
+    });
 
-		console.log(`✅ Selected: ${card.cardData.name}`);
-	}
+    // Highlight valid placement rows
+    this.highlightValidRows(card.cardData.type);
 
-	private deselectCard(): void {
-		if (!this.selectedCard) return;
+    console.log(`✅ Selected: ${card.cardData.name}`);
+  }
 
-		const card = this.selectedCard;
+  private deselectCard(): void {
+    if (!this.selectedCard) return;
 
-		// Return card to normal position
-		gsap.to(card, {
-			y: 0,
-			duration: 0.3,
-			ease: "power2.out",
-		});
+    const card = this.selectedCard;
 
-		// Clear all row highlights
-		this.clearRowHighlights();
+    // Return card to normal position
+    gsap.to(card, {
+      y: 0,
+      duration: 0.3,
+      ease: "power2.out",
+    });
 
-		this.selectedCard = null;
-	}
+    // Clear all row highlights
+    this.clearRowHighlights();
 
-	private async placeSelectedCard(targetRow: PlayingRowContainer): Promise<void> {
-		if (!this.selectedCard) return;
+    this.selectedCard = null;
+  }
 
-		if (!targetRow.canAcceptCard(this.selectedCard)) {
-			return;
-		}
+  private async placeSelectedCard(
+    targetRow: PlayingRowContainer
+  ): Promise<void> {
+    if (!this.selectedCard) return;
 
-		const cardId = this.selectedCard.cardData.id;
+    if (!targetRow.canAcceptCard(this.selectedCard)) {
+      return;
+    }
 
-		let targetRowName: "melee" | "ranged" | "siege";
-this
-		if (targetRow === this.playerMeleeRow) {
-			targetRowName = "melee";
-		} else if (targetRow === this.playerRangedRow) {
-			targetRowName = "ranged";
-		} else if (targetRow === this.playerSiegeRow) {
-			targetRowName = "siege";
-		} else {
-			return;
-		}
+    const cardId = this.selectedCard.cardData.id;
 
-		this.clearRowHighlights();
+    let targetRowName: "melee" | "ranged" | "siege";
+    this;
+    if (targetRow === this.playerMeleeRow) {
+      targetRowName = "melee";
+    } else if (targetRow === this.playerRangedRow) {
+      targetRowName = "ranged";
+    } else if (targetRow === this.playerSiegeRow) {
+      targetRowName = "siege";
+    } else {
+      return;
+    }
 
-		this.selectedCard = null;
+    this.clearRowHighlights();
 
-		if (this.gameController) {
-			this.gameController.placeCard(cardId, targetRowName);
-		} else {
-			const cardIndex = this.playerHand.getAllCards().findIndex(c => c.cardData.id === cardId);
-			if (cardIndex === -1) return;
+    this.selectedCard = null;
 
-			await this.playerHand.transferCardTo(cardIndex, targetRow);
+    if (this.gameController) {
+      this.gameController.placeCard(cardId, targetRowName);
+    } else {
+      const cardIndex = this.playerHand
+        .getAllCards()
+        .findIndex((c) => c.cardData.id === cardId);
+      if (cardIndex === -1) return;
 
-			targetRow.updateScore();
-		}
-	}
+      await this.playerHand.transferCardTo(cardIndex, targetRow);
 
-	private highlightValidRows(cardType: CardType): void {
-		let validRow: PlayingRowContainer | null = null;
+      targetRow.updateScore();
+    }
+  }
 
-		switch (cardType) {
-			case CardType.MELEE:
-				validRow = this.playerMeleeRow;
-				break;
-			case CardType.RANGED:
-				validRow = this.playerRangedRow;
-				break;
-			case CardType.SIEGE:
-				validRow = this.playerSiegeRow;
-				break;
-		}
+  private highlightValidRows(cardType: CardType): void {
+    let validRow: PlayingRowContainer | null = null;
 
-		if (!validRow) return;
+    switch (cardType) {
+      case CardType.MELEE:
+        validRow = this.playerMeleeRow;
+        break;
+      case CardType.RANGED:
+        validRow = this.playerRangedRow;
+        break;
+      case CardType.SIEGE:
+        validRow = this.playerSiegeRow;
+        break;
+    }
 
-		validRow.showHighlight();
-	}
+    if (!validRow) return;
 
-	private clearRowHighlights(): void {
-		[this.playerMeleeRow, this.playerRangedRow, this.playerSiegeRow].forEach((row) => {
-			row.hideHighlight();
-		});
-	}
+    validRow.showHighlight();
+  }
+
+  private clearRowHighlights(): void {
+    [this.playerMeleeRow, this.playerRangedRow, this.playerSiegeRow].forEach(
+      (row) => {
+        row.hideHighlight();
+      }
+    );
+  }
 }

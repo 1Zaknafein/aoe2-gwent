@@ -66,4 +66,18 @@ export class CardDealingManager {
     this.playerHand.removeAllCards();
     this.opponentHand.removeAllCards();
   }
+
+  /**
+   * Get the player hand container
+   */
+  public getPlayerHand(): HandContainer {
+    return this.playerHand;
+  }
+
+  /**
+   * Get the opponent hand container
+   */
+  public getOpponentHand(): HandContainer {
+    return this.opponentHand;
+  }
 }

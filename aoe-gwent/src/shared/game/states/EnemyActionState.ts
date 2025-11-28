@@ -12,8 +12,9 @@ export class EnemyActionState extends GameState {
   public async execute(): Promise<StateName> {
     console.log("[EnemyActionState] Bot is thinking...");
 
+    this.disablePlayerInput();
+
     // TODO: Implement enemy action logic
-    // - Disable player input
     // - Trigger bot to take action
     // - Wait for bot action to complete
     // - Determine next state based on action result
@@ -29,5 +30,13 @@ export class EnemyActionState extends GameState {
     } else {
       return StateName.ENEMY_ACTION;
     }
+  }
+
+  /**
+   * Disable player input by making hand cards non-interactive
+   */
+  private disablePlayerInput(): void {
+    const playerHand = this.cardDealingManager.getPlayerHand();
+    playerHand.setCardsInteractive(false);
   }
 }

@@ -19,12 +19,12 @@ export class MessageDisplay extends PixiContainer {
   private _timeline?: gsap.core.Timeline;
 
   private static readonly DEFAULT_OPTIONS: Required<MessageDisplayOptions> = {
-    width: 400,
-    height: 200,
-    padding: 20,
+    width: 1200,
+    height: 300,
+    padding: 100,
     backgroundColor: "#000000",
     textColor: "#ffffff",
-    fontSize: 18,
+    fontSize: 58,
     fontFamily: "Arial",
   };
 
@@ -37,30 +37,29 @@ export class MessageDisplay extends PixiContainer {
     this.createText();
 
     this.pivot.set(this._options.width / 2, this._options.height / 2);
-    this.interactive = true;
+    this.interactive = false;
+    this.eventMode = "none";
 
-    this.on("pointerdown", this.onPointerDown.bind(this));
+    this.alpha = 0;
+    this.visible = false;
   }
 
   /**
    * Show a message with the specified text
    */
-  public showMessage(message: string, onComplete?: () => void): void {
-    this.updateMessage(message);
-    this.show(onComplete);
-  }
-
-  /**
-   * Update the message displayed in the message display
-   */
-  public updateMessage(message: string): void {
+  public async showMessage(
+    message: string,
+    onComplete?: () => void
+  ): Promise<void> {
     this._messageText.text = message;
+
+    await this.show(onComplete);
   }
 
   /**
    * Show the message display with fade-in animation (0.3s), display for 5s, then fade out
    */
-  public show(onComplete?: () => void): void {
+  public show(onComplete?: () => void): GSAPTimeline {
     if (this._timeline) {
       this._timeline.kill();
     }
@@ -76,31 +75,21 @@ export class MessageDisplay extends PixiContainer {
         duration: 0.5,
         ease: "power2.out",
       })
-      .add(this.hide(), "+=1.5");
+      .to(
+        this,
+        {
+          alpha: 0,
+          duration: 0.3,
+          ease: "power2.in",
+        },
+        "+=1.5"
+      );
 
     if (onComplete) {
-      this._timeline.add(() => {
-        onComplete();
-      });
-    }
-  }
-
-  /**
-   * Hide the message display with fade-out animation (0.3s)
-   */
-  public hide(): GSAPAnimation {
-    if (this._timeline) {
-      this._timeline.kill();
+      this._timeline.add(() => onComplete());
     }
 
-    return gsap.to(this, {
-      alpha: 0,
-      duration: 0.3,
-      ease: "power2.in",
-      onComplete: () => {
-        this.visible = false;
-      },
-    });
+    return this._timeline;
   }
 
   private createBackground(): void {
@@ -122,26 +111,25 @@ export class MessageDisplay extends PixiContainer {
   }
 
   private createText(): void {
+    const { fontFamily, fontSize, textColor, width, height, padding } =
+      this._options;
+
     this._messageText = new PixiText({
       text: "",
       style: {
-        fontFamily: this._options.fontFamily,
-        fontSize: this._options.fontSize,
-        fill: this._options.textColor,
+        fontFamily: fontFamily,
+        fontSize: fontSize,
+        fill: textColor,
         wordWrap: true,
-        wordWrapWidth: this._options.width - this._options.padding * 2,
+        wordWrapWidth: width - padding * 2,
         align: "center",
       },
     });
 
     this._messageText.anchor.set(0.5);
-    this._messageText.x = this._options.width / 2;
-    this._messageText.y = this._options.height / 2;
+    this._messageText.x = width / 2;
+    this._messageText.y = height / 2;
 
     this.addChild(this._messageText);
-  }
-
-  private onPointerDown(event: any): void {
-    event.stopPropagation();
   }
 }

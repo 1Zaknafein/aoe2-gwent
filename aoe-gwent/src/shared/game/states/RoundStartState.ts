@@ -19,17 +19,20 @@ export class RoundStartState extends GameState {
       `[RoundStartState] Starting round ${this.gameManager.getCurrentRound()}`
     );
 
-    this._messageDisplay.showMessage(
-      "Round " + this.gameManager.getCurrentRound() + " Start!"
+    await this.delay(0.3);
+
+    await this._messageDisplay.showMessage(
+      "Round " + this.gameManager.getCurrentRound() + " starts!"
     );
+
+    const playerHand = this.cardDealingManager.getPlayerHand();
+    playerHand.setCardsInteractive(false);
 
     // TODO Implement round start logic
     // - Clear passed players
     // - Determine starting player for this round
     // - Display round start message/animation
     // - Apply any round-specific effects
-
-    await new Promise(() => {});
 
     return StateName.PLAYER_ACTION;
   }
