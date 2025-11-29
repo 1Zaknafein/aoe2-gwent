@@ -17,7 +17,11 @@ export class LocalGameController extends EventEmitter {
 	private playerId: string;
 	private playerName: string;
 
-	constructor(cardContainers: CardContainerManager, playerId: string = "player1", playerName: string = "Player") {
+	constructor(
+		cardContainers: CardContainerManager,
+		playerId: string = "player1",
+		playerName: string = "Player"
+	) {
 		super();
 		this.cardContainers = cardContainers;
 		this.playerId = playerId;
@@ -156,7 +160,7 @@ export class LocalGameController extends EventEmitter {
 		const state = this.gameSession.getGameState();
 		if (state.currentTurn === "bot" && !state.passedPlayers.has("bot")) {
 			// Bot's turn
-			await this.botPlayer.takeTurnIfNeeded();
+			await this.botPlayer.takeTurn();
 		}
 	}
 
@@ -176,7 +180,11 @@ export class LocalGameController extends EventEmitter {
 		let playerScore = 0;
 		let botScore = 0;
 
-		for (const row of [playerBoard.melee, playerBoard.ranged, playerBoard.siege]) {
+		for (const row of [
+			playerBoard.melee,
+			playerBoard.ranged,
+			playerBoard.siege,
+		]) {
 			for (const cardId of row) {
 				const card = CardDatabase.getCardById(cardId);
 				if (card) playerScore += card.score;
@@ -191,7 +199,12 @@ export class LocalGameController extends EventEmitter {
 		}
 
 		const state = this.gameSession.getGameState();
-		const winner = playerScore > botScore ? this.playerId : botScore > playerScore ? "bot" : "tie";
+		const winner =
+			playerScore > botScore
+				? this.playerId
+				: botScore > playerScore
+				? "bot"
+				: "tie";
 
 		this.emit("roundEnded", {
 			winner,
@@ -227,7 +240,10 @@ export class LocalGameController extends EventEmitter {
 	/**
 	 * Place a card
 	 */
-	public async placeCard(cardId: number, targetRow: "melee" | "ranged" | "siege"): Promise<void> {
+	public async placeCard(
+		cardId: number,
+		targetRow: "melee" | "ranged" | "siege"
+	): Promise<void> {
 		if (!this.gameSession || !this.canPlayerAct()) {
 			throw new Error("Cannot act right now");
 		}
@@ -365,7 +381,7 @@ export class LocalGameController extends EventEmitter {
 	}
 
 	/**
-	 * Public API 
+	 * Public API
 	 */
 	public canPlayerAct(): boolean {
 		if (!this.gameSession) return false;
@@ -429,5 +445,4 @@ export class LocalGameController extends EventEmitter {
 				: { id: 0, name: "Unknown", score: 0, type: CardType.MELEE };
 		});
 	}
-
 }

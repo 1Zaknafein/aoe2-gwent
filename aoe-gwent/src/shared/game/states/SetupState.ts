@@ -9,20 +9,30 @@ import { GameContext } from "../GameContext";
  * Transitions to: GameStartState
  */
 export class SetupState extends GameState {
-  constructor(context: GameContext) {
-    super(context);
-  }
-  public async execute(): Promise<StateName> {
-    this.gameManager.initializeGame("bot", "Bot Opponent");
+	constructor(context: GameContext) {
+		super(context);
+	}
+	public async execute(): Promise<StateName> {
+		this.gameManager.initializeGame("bot", "Bot Opponent");
 
-    const gameSession = this.gameManager.getGameSession();
+		const gameSession = this.gameManager.getGameSession();
 
-    if (!gameSession) {
-      throw new Error("Failed to initialize game session");
-    }
+		if (!gameSession) {
+			throw new Error("Failed to initialize game session");
+		}
 
-    console.log("[SetupState] Game session initialized");
+		// Set game session on interaction manager for turn management
+		this.interactionManager.setGameSession(
+			gameSession,
+			this.gameManager.getPlayerId()
+		);
 
-    return StateName.GAME_START;
-  }
+		console.log(
+			"[SetupState] Game session initialized and set on interaction manager"
+		);
+		console.log("[SetupState] PlayerId:", this.gameManager.getPlayerId());
+		console.log("[SetupState] GameSession exists:", !!gameSession);
+
+		return StateName.GAME_START;
+	}
 }

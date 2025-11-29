@@ -28,17 +28,17 @@ export class BotPlayer {
 	/**
 	 * Check if it's the bot's turn and make a move
 	 */
-	public async takeTurnIfNeeded(): Promise<void> {
+	public async takeTurn(): Promise<PlayerAction> {
 		const gameState = this.gameSession.getGameState();
 
 		// Check if it's bot's turn
 		if (gameState.currentTurn !== this.botId) {
-			return;
+			throw new Error("Not bot's turn");
 		}
 
 		// Check if bot has already passed
 		if (gameState.passedPlayers.has(this.botId)) {
-			return;
+			throw new Error("Bot has already passed");
 		}
 
 		// Wait a bit to simulate "thinking"
@@ -48,9 +48,13 @@ export class BotPlayer {
 		const action = this.decideAction();
 
 		if (action) {
-			console.log(`🤖 Bot action:`, action);
+			console.log(`Bot action:`, action);
 			this.gameSession.processAction(action);
+
+			return action;
 		}
+
+		throw new Error("Bot could not decide on an action");
 	}
 
 	/**
@@ -88,10 +92,6 @@ export class BotPlayer {
 			botBoard.melee.length + botBoard.ranged.length + botBoard.siege.length;
 
 		if (botScore > playerScore + 10 && botCardsPlayed >= 3) {
-			// Bot is winning, pass to conserve cards
-			console.log(
-				`🤖 Bot passing (winning by ${botScore - playerScore}, ${botCardsPlayed} cards played)`
-			);
 			return {
 				type: ActionType.PASS_TURN,
 				playerId: this.botId,
@@ -118,7 +118,7 @@ export class BotPlayer {
 		const cardData = CardDatabase.getCardById(cardId);
 
 		if (!cardData) {
-			console.error(`🤖 Bot: Card ${cardId} not found in database`);
+			console.error(`Bot: Card ${cardId} not found in database`);
 			return null;
 		}
 
@@ -139,7 +139,7 @@ export class BotPlayer {
 		}
 
 		console.log(
-			`🤖 Bot playing card ${cardData.name} (${cardData.score}) on ${targetRow}`
+			`Bot playing card ${cardData.name} (${cardData.score}) on ${targetRow}`
 		);
 
 		return {

@@ -1,14 +1,12 @@
 import { PixiContainer } from "../../plugins/engine";
 import { PlayerDisplay, PlayerDisplayData } from "./PlayerDisplay";
 import { CardContainer } from "../card";
-import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export interface PlayerDisplayManagerConfig {
 	playerName: string;
 	enemyName: string;
 	playerPosition: { x: number; y: number };
 	enemyPosition: { x: number; y: number };
-	gameController?: LocalGameController;
 }
 
 export class PlayerDisplayManager extends PixiContainer {
@@ -22,7 +20,6 @@ export class PlayerDisplayManager extends PixiContainer {
 			playerName: config.playerName,
 			isEnemy: false,
 			position: config.playerPosition,
-			gameController: config.gameController,
 		};
 		this._playerDisplay = new PlayerDisplay(playerData);
 		this.addChild(this._playerDisplay);

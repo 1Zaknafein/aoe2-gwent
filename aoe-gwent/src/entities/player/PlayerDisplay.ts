@@ -2,7 +2,6 @@ import { Text, TextStyle, Graphics } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
 import { CardContainer } from "../card";
 import { PassButton } from "../../ui/components";
-import { LocalGameController } from "../../shared/game/LocalGameController";
 
 export class PlayerDisplay extends PixiContainer {
 	public playerNameText!: Text;
@@ -19,13 +18,11 @@ export class PlayerDisplay extends PixiContainer {
 	private _currentHandCount = 0;
 	private _currentTotalScore = 0;
 	private _watchedContainers: CardContainer[] = [];
-	private _gameController?: LocalGameController;
 
 	constructor(data: PlayerDisplayData) {
 		super();
 
 		this._isEnemy = data.isEnemy || false;
-		this._gameController = data.gameController;
 
 		this.position.set(data.position.x, data.position.y);
 
@@ -287,5 +284,4 @@ export interface PlayerDisplayData {
 	playerName: string;
 	isEnemy?: boolean;
 	position: { x: number; y: number };
-	gameController?: LocalGameController; // Optional - only needed for player (not enemy)
 }
