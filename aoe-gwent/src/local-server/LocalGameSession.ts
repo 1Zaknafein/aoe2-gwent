@@ -11,9 +11,7 @@ import { RoundManager } from "./RoundManager";
 import { ScoreCalculator } from "./ScoreCalculator";
 
 /**
- * LocalGameSession - Manages a local game session (player vs bot)
- * This is a client-side adaptation of GameSessionInstance
- * Handles all game logic locally without WebSocket communication
+ * Manages a local game session (player vs bot)
  */
 export class LocalGameSession {
 	private session: GameSession;
@@ -28,12 +26,10 @@ export class LocalGameSession {
 		botId: string = "bot",
 		botName: string = "Bot Opponent"
 	) {
-		// Initialize manager classes
 		this.turnManager = new TurnManager([playerId, botId], playerId);
 		this.roundManager = new RoundManager([playerId, botId]);
 		this.scoreCalculator = new ScoreCalculator();
 
-		// Initialize the game session
 		this.session = {
 			roomId: "local-game",
 			playerIds: [playerId, botId],
@@ -121,8 +117,29 @@ export class LocalGameSession {
 	}
 
 	/**
+	 * Get player board
+	 */
+	private getPlayerBoard(playerId: string) {
+		const board = this.session.playerBoards.get(playerId);
+		if (!board) {
+			throw new Error(`Player board not found for ${playerId}`);
+		}
+		return board;
+	}
+
+	/**
+	 * Get player hand
+	 */
+	private getPlayerHandInternal(playerId: string) {
+		const hand = this.session.playerHands.get(playerId);
+		if (!hand) {
+			throw new Error(`Player hand not found for ${playerId}`);
+		}
+		return hand;
+	}
+
+	/**
 	 * Start the game - initialize decks and deal initial hands
-	 * Generates ~50 cards per player, deals 10 initially, rest remain in deck for drawing
 	 */
 	public startGame(): void {
 		if (this.session.isGameStarted) {
@@ -216,16 +233,8 @@ export class LocalGameSession {
 			};
 		}
 
-		const playerHand = this.session.playerHands.get(action.playerId);
-		const playerBoard = this.session.playerBoards.get(action.playerId);
-
-		if (!playerHand || !playerBoard) {
-			return {
-				success: false,
-				error: "Player data not found",
-				gameStateChanged: false,
-			};
-		}
+		const playerHand = this.getPlayerHandInternal(action.playerId);
+		const playerBoard = this.getPlayerBoard(action.playerId);
 
 		// Check if player has the card
 		const cardIndex = playerHand.indexOf(action.cardId);
@@ -364,7 +373,7 @@ export class LocalGameSession {
 	private startNextRound(): void {
 		// Clear boards to discard piles
 		for (const playerId of this.session.playerIds) {
-			const board = this.session.playerBoards.get(playerId)!;
+			const board = this.getPlayerBoard(playerId);
 			const discard = this.session.playerDiscards.get(playerId)!;
 
 			// Move all cards from board to discard
@@ -438,13 +447,6 @@ export class LocalGameSession {
 	}
 
 	/**
-	 * Get room ID
-	 */
-	public getRoomId(): string {
-		return this.session.roomId;
-	}
-
-	/**
 	 * Get player IDs
 	 */
 	public getPlayerIds(): [string, string] {
@@ -454,28 +456,27 @@ export class LocalGameSession {
 	/**
 	 * Get complete game data for the human player
 	 */
-	public getGameDataForPlayer(playerId: string) {
+	public getGameDataForPlayer(playerId: string): PlayerGameData {
 		const playerNumber = this.getPlayerNumber(playerId);
 		const opponentId = this.getOpponentId(playerId);
 
 		if (!playerNumber || !opponentId) {
-			return null;
+			throw new Error("Invalid player ID");
 		}
 
-		// Get player hand
 		const playerHandIds = this.session.playerHands.get(playerId) || [];
 
+		const playerBoard = this.getPlayerBoard(playerId);
+		const enemyBoard = this.getPlayerBoard(opponentId);
+
 		return {
-			// Player identity
 			playerId,
 			playerNumber,
 			playerName: this.session.playerNames.get(playerId),
 
-			// Opponent identity
 			opponentId,
 			opponentName: this.session.playerNames.get(opponentId),
 
-			// Game state
 			gameState: {
 				phase: this.session.gameState.phase,
 				currentTurn: this.session.gameState.currentTurn,
@@ -486,18 +487,42 @@ export class LocalGameSession {
 				handSizes: Object.fromEntries(this.session.gameState.handSizes),
 			},
 
-			// Player's private data
 			playerHand: playerHandIds,
 
-			// Public board data (visible to all)
 			boards: {
-				[playerId]: this.session.playerBoards.get(playerId),
-				[opponentId]: this.session.playerBoards.get(opponentId),
+				player: playerBoard,
+				enemy: enemyBoard,
 			},
 
-			// Metadata
-			roomId: this.session.roomId,
 			isGameStarted: this.session.isGameStarted,
 		};
 	}
 }
+
+export type PlayerGameData = {
+	playerId: string;
+	playerNumber: 1 | 2;
+	playerName?: string;
+
+	opponentId: string;
+	opponentName?: string;
+
+	gameState: {
+		phase: GamePhase;
+		currentTurn: string;
+		isMyTurn: boolean;
+		roundNumber: number;
+		scores: Record<string, number>;
+		passedPlayers: string[];
+		handSizes: Record<string, number>;
+	};
+
+	playerHand: number[];
+
+	boards: {
+		player: { melee: number[]; ranged: number[]; siege: number[] };
+		enemy: { melee: number[]; ranged: number[]; siege: number[] };
+	};
+
+	isGameStarted: boolean;
+};

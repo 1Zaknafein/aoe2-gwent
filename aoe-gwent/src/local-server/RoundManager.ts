@@ -1,11 +1,5 @@
 /**
- * RoundManager - Manages the 3-round game lifecycle
- * Responsibilities:
- * - Track round number (1-3)
- * - Track round wins per player (best of 3)
- * - Determine round winners
- * - Detect game end
- * - Coordinate round transitions
+ * Manages the 3-round game lifecycle
  */
 export class RoundManager {
 	private roundNumber: number;
@@ -59,9 +53,7 @@ export class RoundManager {
 			const currentWins = this.roundWins.get(winnerId) || 0;
 			this.roundWins.set(winnerId, currentWins + 1);
 		} else {
-			// In a tie, both players get a win point (Gwent rules)
-			// Or neither gets a point? Let's stick to Gwent rules: both get a point
-			// Actually, let's keep it simple: both get a point
+			// In a tie, both players get a win point
 			this.playerIds.forEach((pid) => {
 				const wins = this.roundWins.get(pid) || 0;
 				this.roundWins.set(pid, wins + 1);
@@ -92,7 +84,7 @@ export class RoundManager {
 			return { gameEnded: true, gameWinner: this.playerIds[1] };
 		}
 
-		// Check if max rounds reached (should be covered above usually, but for safety)
+		// Check if max rounds reached
 		if (this.roundNumber > this.MAX_ROUNDS) {
 			if (p1Wins > p2Wins) {
 				return { gameEnded: true, gameWinner: this.playerIds[0] };

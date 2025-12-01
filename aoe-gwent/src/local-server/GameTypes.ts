@@ -1,12 +1,11 @@
 /**
  * Game state and types for individual game sessions
- * Ported from server/src/game/GameTypes.ts
  */
 
 export enum GamePhase {
 	WAITING_FOR_GAME_START = "waiting_for_game_start",
 	PLAYER_TURN = "player_turn",
-	ENEMY_TURN = "enemy_turn", // Note: In multiplayer this becomes "opponent_turn"
+	ENEMY_TURN = "enemy_turn",
 	ROUND_END = "round_end",
 	GAME_END = "game_end",
 }
@@ -19,13 +18,13 @@ export enum ActionType {
 
 export interface GameState {
 	phase: GamePhase;
-	currentTurn: string; // playerId of current player
+	currentTurn: string;
 	roundNumber: number;
-	scores: Map<string, number>; // playerId -> score
-	passedPlayers: Set<string>; // playerIds who have passed
-	startingPlayer: string; // playerId who started the game
-	handSizes: Map<string, number>; // playerId -> hand size
-	gameStarted: boolean; // flag to prevent duplicate game:start messages
+	scores: Map<string, number>;
+	passedPlayers: Set<string>;
+	startingPlayer: string;
+	handSizes: Map<string, number>;
+	gameStarted: boolean;
 }
 
 export interface PlayerAction {
