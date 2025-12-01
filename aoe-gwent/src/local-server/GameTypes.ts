@@ -1,3 +1,5 @@
+import { PlayerID } from "../shared/types";
+
 /**
  * Game state and types for individual game sessions
  */
@@ -18,34 +20,34 @@ export enum ActionType {
 
 export interface GameState {
 	phase: GamePhase;
-	currentTurn: string;
+	currentTurn: PlayerID;
 	roundNumber: number;
-	scores: Map<string, number>;
-	passedPlayers: Set<string>;
-	startingPlayer: string;
-	handSizes: Map<string, number>;
+	scores: Map<PlayerID, number>;
+	passedPlayers: Set<PlayerID>;
+	startingPlayer: PlayerID;
+	handSizes: Map<PlayerID, number>;
 	gameStarted: boolean;
 }
 
 export interface PlayerAction {
 	type: ActionType;
-	playerId: string;
+	playerId: PlayerID;
 	cardId?: number;
 	targetRow?: "melee" | "ranged" | "siege";
 }
 
 export interface GameSession {
 	readonly roomId: string;
-	readonly playerIds: [string, string];
-	readonly playerNames: Map<string, string>;
+	readonly playerIds: [PlayerID, PlayerID];
+	readonly playerNames: Map<PlayerID, string>;
 	gameState: GameState;
-	playerHands: Map<string, number[]>;
-	playerDecks: Map<string, number[]>;
+	playerHands: Map<PlayerID, number[]>;
+	playerDecks: Map<PlayerID, number[]>;
 	playerBoards: Map<
-		string,
+		PlayerID,
 		{ melee: number[]; ranged: number[]; siege: number[] }
 	>;
-	playerDiscards: Map<string, number[]>;
+	playerDiscards: Map<PlayerID, number[]>;
 	isGameStarted: boolean;
 	createdAt: Date;
 }

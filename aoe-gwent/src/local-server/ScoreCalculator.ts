@@ -1,11 +1,8 @@
 import { CardDatabase } from "./CardDatabase";
+import { PlayerID } from "../shared/types";
 
 /**
- * ScoreCalculator - Handles all scoring logic
- * Responsibilities:
- * - Calculate total score for a player's board
- * - Compare scores between players
- * - Validate client-reported scores
+ * Handles all scoring logic
  */
 export class ScoreCalculator {
 	/**
@@ -25,7 +22,7 @@ export class ScoreCalculator {
 				if (cardData) {
 					totalScore += cardData.score;
 				} else {
-					console.warn(`⚠️ Card ${cardId} not found in database`);
+					console.warn(`Card ${cardId} not found in database`);
 				}
 			}
 		}
@@ -36,8 +33,13 @@ export class ScoreCalculator {
 	/**
 	 * Calculate scores for both players
 	 */
-	public calculateScores(boards: Map<string, { melee: number[]; ranged: number[]; siege: number[] }>): Map<string, number> {
-		const scores = new Map<string, number>();
+	public calculateScores(
+		boards: Map<
+			PlayerID,
+			{ melee: number[]; ranged: number[]; siege: number[] }
+		>
+	): Map<PlayerID, number> {
+		const scores = new Map<PlayerID, number>();
 
 		for (const [playerId, board] of boards) {
 			scores.set(playerId, this.calculateBoardScore(board));
@@ -49,9 +51,9 @@ export class ScoreCalculator {
 	/**
 	 * Compare scores and determine winner
 	 */
-	public determineWinner(scores: Map<string, number>): string | "tie" {
+	public determineWinner(scores: Map<PlayerID, number>): PlayerID | "tie" {
 		let maxScore = -1;
-		let winner = "tie";
+		let winner: PlayerID | "tie" = "tie";
 
 		for (const [playerId, score] of scores) {
 			if (score > maxScore) {

@@ -4,6 +4,7 @@ import { CardType } from "../../shared/types/CardTypes";
 import { LocalGameController } from "../../shared/game/LocalGameController";
 import { LocalGameSession } from "../../local-server/LocalGameSession";
 import { ActionType } from "../../local-server/GameTypes";
+import { PlayerID } from "../../shared/types";
 import { gsap } from "gsap";
 
 /**
@@ -15,7 +16,7 @@ export class GameBoardInteractionManager {
 	private cardClickInProgress: boolean = false;
 	private gameController: LocalGameController | null = null;
 	private gameSession: LocalGameSession | null = null;
-	private playerId: string | null = null;
+	private playerId: PlayerID | null = null;
 
 	// References to containers
 	private playerHand: HandContainer;
@@ -45,7 +46,10 @@ export class GameBoardInteractionManager {
 	/**
 	 * Set game session for turn management
 	 */
-	public setGameSession(gameSession: LocalGameSession, playerId: string): void {
+	public setGameSession(
+		gameSession: LocalGameSession,
+		playerId: PlayerID
+	): void {
 		this.gameSession = gameSession;
 		this.playerId = playerId;
 	}
@@ -199,7 +203,6 @@ export class GameBoardInteractionManager {
 		const cardId = this.selectedCard.cardData.id;
 
 		let targetRowName: "melee" | "ranged" | "siege";
-		this;
 		if (targetRow === this.playerMeleeRow) {
 			targetRowName = "melee";
 		} else if (targetRow === this.playerRangedRow) {
@@ -226,7 +229,7 @@ export class GameBoardInteractionManager {
 
 			targetRow.updateScore();
 
-			if (this.gameSession && this.playerId) {
+			if (this.gameSession && this.playerId !== null) {
 				const result = this.gameSession.processAction({
 					type: ActionType.PLACE_CARD,
 					playerId: this.playerId,

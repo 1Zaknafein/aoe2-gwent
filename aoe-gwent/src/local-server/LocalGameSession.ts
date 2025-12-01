@@ -9,6 +9,7 @@ import { CardDatabase } from "./CardDatabase";
 import { TurnManager } from "./TurnManager";
 import { RoundManager } from "./RoundManager";
 import { ScoreCalculator } from "./ScoreCalculator";
+import { PlayerID } from "../shared/types";
 
 /**
  * Manages a local game session (player vs bot)
@@ -21,21 +22,21 @@ export class LocalGameSession {
 	private onStateChange?: (state: GameState) => void;
 
 	constructor(
-		playerId: string,
+		playerId: PlayerID,
 		playerName: string,
-		botId: string = "bot",
-		botName: string = "Bot Opponent"
+		opponentId: PlayerID,
+		opponentName: string
 	) {
-		this.turnManager = new TurnManager([playerId, botId], playerId);
-		this.roundManager = new RoundManager([playerId, botId]);
+		this.turnManager = new TurnManager([playerId, opponentId], playerId);
+		this.roundManager = new RoundManager([playerId, opponentId]);
 		this.scoreCalculator = new ScoreCalculator();
 
 		this.session = {
 			roomId: "local-game",
-			playerIds: [playerId, botId],
+			playerIds: [playerId, opponentId],
 			playerNames: new Map([
 				[playerId, playerName],
-				[botId, botName],
+				[opponentId, opponentName],
 			]),
 			gameState: {
 				phase: GamePhase.WAITING_FOR_GAME_START,
@@ -43,31 +44,31 @@ export class LocalGameSession {
 				roundNumber: 1,
 				scores: new Map([
 					[playerId, 0],
-					[botId, 0],
+					[opponentId, 0],
 				]),
 				passedPlayers: new Set(),
 				startingPlayer: playerId,
 				handSizes: new Map([
 					[playerId, 0],
-					[botId, 0],
+					[opponentId, 0],
 				]),
 				gameStarted: false,
 			},
 			playerHands: new Map([
 				[playerId, []],
-				[botId, []],
+				[opponentId, []],
 			]),
 			playerDecks: new Map([
 				[playerId, []],
-				[botId, []],
+				[opponentId, []],
 			]),
 			playerBoards: new Map([
 				[playerId, { melee: [], ranged: [], siege: [] }],
-				[botId, { melee: [], ranged: [], siege: [] }],
+				[opponentId, { melee: [], ranged: [], siege: [] }],
 			]),
 			playerDiscards: new Map([
 				[playerId, []],
-				[botId, []],
+				[opponentId, []],
 			]),
 			isGameStarted: false,
 			createdAt: new Date(),
@@ -93,7 +94,7 @@ export class LocalGameSession {
 	/**
 	 * Get player number (1 or 2) for a given player ID
 	 */
-	public getPlayerNumber(playerId: string): 1 | 2 | null {
+	public getPlayerNumber(playerId: PlayerID): 1 | 2 | null {
 		const playerIndex = this.session.playerIds.indexOf(playerId);
 		if (playerIndex === -1) return null;
 		return (playerIndex + 1) as 1 | 2;
@@ -102,7 +103,7 @@ export class LocalGameSession {
 	/**
 	 * Get the opponent's player ID
 	 */
-	public getOpponentId(playerId: string): string | null {
+	public getOpponentId(playerId: PlayerID): PlayerID | null {
 		const playerIndex = this.session.playerIds.indexOf(playerId);
 		if (playerIndex === -1) return null;
 		const opponentIndex = playerIndex === 0 ? 1 : 0;
@@ -110,16 +111,16 @@ export class LocalGameSession {
 	}
 
 	/**
-	 * Check if a player is the bot
+	 * Check if a player is the bot (opponent)
 	 */
-	public isBot(playerId: string): boolean {
+	public isBot(playerId: PlayerID): boolean {
 		return this.session.playerIds[1] === playerId;
 	}
 
 	/**
 	 * Get player board
 	 */
-	private getPlayerBoard(playerId: string) {
+	private getPlayerBoard(playerId: PlayerID) {
 		const board = this.session.playerBoards.get(playerId);
 		if (!board) {
 			throw new Error(`Player board not found for ${playerId}`);
@@ -130,7 +131,7 @@ export class LocalGameSession {
 	/**
 	 * Get player hand
 	 */
-	private getPlayerHandInternal(playerId: string) {
+	private getPlayerHandInternal(playerId: PlayerID) {
 		const hand = this.session.playerHands.get(playerId);
 		if (!hand) {
 			throw new Error(`Player hand not found for ${playerId}`);
@@ -418,7 +419,7 @@ export class LocalGameSession {
 	/**
 	 * Get player hand (only for that specific player)
 	 */
-	public getPlayerHand(playerId: string): number[] | null {
+	public getPlayerHand(playerId: PlayerID): number[] | null {
 		return this.session.playerHands.get(playerId) || null;
 	}
 
@@ -426,7 +427,7 @@ export class LocalGameSession {
 	 * Get all board states (visible to all players)
 	 */
 	public getBoardStates(): Map<
-		string,
+		PlayerID,
 		{ melee: number[]; ranged: number[]; siege: number[] }
 	> {
 		return new Map(this.session.playerBoards);
@@ -435,7 +436,7 @@ export class LocalGameSession {
 	/**
 	 * Get player names
 	 */
-	public getPlayerNames(): Map<string, string> {
+	public getPlayerNames(): Map<PlayerID, string> {
 		return new Map(this.session.playerNames);
 	}
 
@@ -449,18 +450,18 @@ export class LocalGameSession {
 	/**
 	 * Get player IDs
 	 */
-	public getPlayerIds(): [string, string] {
-		return [...this.session.playerIds] as [string, string];
+	public getPlayerIds(): [PlayerID, PlayerID] {
+		return [...this.session.playerIds] as [PlayerID, PlayerID];
 	}
 
 	/**
 	 * Get complete game data for the human player
 	 */
-	public getGameDataForPlayer(playerId: string): PlayerGameData {
+	public getGameDataForPlayer(playerId: PlayerID): PlayerGameData {
 		const playerNumber = this.getPlayerNumber(playerId);
 		const opponentId = this.getOpponentId(playerId);
 
-		if (!playerNumber || !opponentId) {
+		if (!playerNumber || opponentId === null) {
 			throw new Error("Invalid player ID");
 		}
 
@@ -500,21 +501,21 @@ export class LocalGameSession {
 }
 
 export type PlayerGameData = {
-	playerId: string;
+	playerId: PlayerID;
 	playerNumber: 1 | 2;
 	playerName?: string;
 
-	opponentId: string;
+	opponentId: PlayerID;
 	opponentName?: string;
 
 	gameState: {
 		phase: GamePhase;
-		currentTurn: string;
+		currentTurn: PlayerID;
 		isMyTurn: boolean;
 		roundNumber: number;
-		scores: Record<string, number>;
-		passedPlayers: string[];
-		handSizes: Record<string, number>;
+		scores: Record<number, number>;
+		passedPlayers: PlayerID[];
+		handSizes: Record<number, number>;
 	};
 
 	playerHand: number[];

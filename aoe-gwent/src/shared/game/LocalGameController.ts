@@ -6,6 +6,7 @@ import { CardData } from "../types/CardData";
 import { CardType } from "../types/CardTypes";
 import { CardContainerManager } from "../../entities/card";
 import { CardDatabase } from "../../local-server/CardDatabase";
+import { PlayerID } from "../types";
 
 /**
  * Manages local game with bot opponent
@@ -14,12 +15,12 @@ export class LocalGameController extends EventEmitter {
 	private gameSession: LocalGameSession | null = null;
 	private botPlayer: BotPlayer | null = null;
 	private cardContainers: CardContainerManager;
-	private playerId: string;
+	private playerId: PlayerID;
 	private playerName: string;
 
 	constructor(
 		cardContainers: CardContainerManager,
-		playerId: string = "player1",
+		playerId: PlayerID = PlayerID.PLAYER,
 		playerName: string = "Player"
 	) {
 		super();
@@ -37,12 +38,12 @@ export class LocalGameController extends EventEmitter {
 			this.gameSession = new LocalGameSession(
 				this.playerId,
 				this.playerName,
-				"bot",
+				PlayerID.OPPONENT,
 				"Bot Opponent"
 			);
 
 			// Create bot player
-			this.botPlayer = new BotPlayer("bot", this.gameSession, 1000);
+			this.botPlayer = new BotPlayer(PlayerID.OPPONENT, this.gameSession, 1000);
 
 			// Listen for state changes
 			this.gameSession.onGameStateChange(() => {
@@ -91,7 +92,8 @@ export class LocalGameController extends EventEmitter {
 		// Setup opponent hand (card backs)
 		const opponentHand = this.cardContainers.enemy.hand;
 		opponentHand.removeAllCards();
-		const opponentHandSize = gameData.gameState.handSizes.bot || 10;
+		const opponentHandSize =
+			gameData.gameState.handSizes[PlayerID.OPPONENT] || 10;
 		for (let i = 0; i < opponentHandSize; i++) {
 			opponentHand.addCard({
 				id: 0,
@@ -125,11 +127,11 @@ export class LocalGameController extends EventEmitter {
 			currentTurn: state.currentTurn,
 			roundNumber: state.roundNumber,
 			playerRoundWins: state.scores.get(this.playerId) || 0,
-			opponentRoundWins: state.scores.get("bot") || 0,
+			opponentRoundWins: state.scores.get(PlayerID.OPPONENT) || 0,
 			playerHandSize: state.handSizes.get(this.playerId) || 0,
-			opponentHandSize: state.handSizes.get("bot") || 0,
+			opponentHandSize: state.handSizes.get(PlayerID.OPPONENT) || 0,
 			playerPassed: state.passedPlayers.has(this.playerId),
-			opponentPassed: state.passedPlayers.has("bot"),
+			opponentPassed: state.passedPlayers.has(PlayerID.OPPONENT),
 		});
 
 		// Check turn changes
@@ -158,7 +160,10 @@ export class LocalGameController extends EventEmitter {
 		if (!this.botPlayer || !this.gameSession) return;
 
 		const state = this.gameSession.getGameState();
-		if (state.currentTurn === "bot" && !state.passedPlayers.has("bot")) {
+		if (
+			state.currentTurn === PlayerID.OPPONENT &&
+			!state.passedPlayers.has(PlayerID.OPPONENT)
+		) {
 			// Bot's turn
 			await this.botPlayer.takeTurn();
 		}
@@ -172,7 +177,7 @@ export class LocalGameController extends EventEmitter {
 
 		const boards = this.gameSession.getBoardStates();
 		const playerBoard = boards.get(this.playerId);
-		const botBoard = boards.get("bot");
+		const botBoard = boards.get(PlayerID.OPPONENT);
 
 		if (!playerBoard || !botBoard) return;
 
@@ -203,7 +208,7 @@ export class LocalGameController extends EventEmitter {
 			playerScore > botScore
 				? this.playerId
 				: botScore > playerScore
-				? "bot"
+				? PlayerID.OPPONENT
 				: "tie";
 
 		this.emit("roundEnded", {
@@ -211,7 +216,7 @@ export class LocalGameController extends EventEmitter {
 			playerScore,
 			opponentScore: botScore,
 			playerRoundWins: state.scores.get(this.playerId) || 0,
-			opponentRoundWins: state.scores.get("bot") || 0,
+			opponentRoundWins: state.scores.get(PlayerID.OPPONENT) || 0,
 		});
 
 		// Clear boards after delay
@@ -228,12 +233,12 @@ export class LocalGameController extends EventEmitter {
 
 		const state = this.gameSession.getGameState();
 		const playerWins = state.scores.get(this.playerId) || 0;
-		const botWins = state.scores.get("bot") || 0;
+		const botWins = state.scores.get(PlayerID.OPPONENT) || 0;
 		const playerWon = playerWins > botWins;
 
 		this.emit("gameEnded", {
 			playerWon,
-			winner: playerWon ? this.playerId : "bot",
+			winner: playerWon ? this.playerId : PlayerID.OPPONENT,
 		});
 	}
 
@@ -343,7 +348,7 @@ export class LocalGameController extends EventEmitter {
 		if (!this.gameSession) return;
 
 		const state = this.gameSession.getGameState();
-		const botHandSize = state.handSizes.get("bot") || 0;
+		const botHandSize = state.handSizes.get(PlayerID.OPPONENT) || 0;
 		const opponentHand = this.cardContainers.enemy.hand;
 
 		// Adjust number of card backs
@@ -419,11 +424,11 @@ export class LocalGameController extends EventEmitter {
 			currentTurn: state.currentTurn,
 			roundNumber: state.roundNumber,
 			playerRoundWins: state.scores.get(this.playerId) || 0,
-			opponentRoundWins: state.scores.get("bot") || 0,
+			opponentRoundWins: state.scores.get(PlayerID.OPPONENT) || 0,
 			playerHandSize: state.handSizes.get(this.playerId) || 0,
-			opponentHandSize: state.handSizes.get("bot") || 0,
+			opponentHandSize: state.handSizes.get(PlayerID.OPPONENT) || 0,
 			playerPassed: state.passedPlayers.has(this.playerId),
-			opponentPassed: state.passedPlayers.has("bot"),
+			opponentPassed: state.passedPlayers.has(PlayerID.OPPONENT),
 		};
 	}
 

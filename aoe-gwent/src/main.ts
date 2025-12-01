@@ -19,6 +19,7 @@ import { PlayerActionState } from "./shared/game/states/PlayerActionState";
 import { EnemyActionState } from "./shared/game/states/EnemyActionState";
 import { RoundEndState } from "./shared/game/states/RoundEndState";
 import { ResolutionState } from "./shared/game/states/ResolutionState";
+import { PlayerID } from "./shared/types";
 
 const boostsrap = async () => {
 	const appOptions: Partial<IPixiApplicationOptions> = {
@@ -45,7 +46,7 @@ const boostsrap = async () => {
 			const gameScene = new GameScene();
 			Manager.changeScene(gameScene);
 
-			const gameManager = new GameManager("player1", "Player");
+			const gameManager = new GameManager(PlayerID.PLAYER);
 
 			const cardDealingManager = new CardDealingManager(
 				gameScene.getPlayerHand(),

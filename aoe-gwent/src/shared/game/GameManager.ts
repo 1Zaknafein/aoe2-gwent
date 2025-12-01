@@ -1,5 +1,6 @@
 import { LocalGameSession } from "../../local-server/LocalGameSession";
 import { BotPlayer } from "../../local-server/BotPlayer";
+import { PlayerID } from "../types";
 
 /**
  * GameManager - Central game state manager
@@ -8,26 +9,24 @@ import { BotPlayer } from "../../local-server/BotPlayer";
 export class GameManager {
 	private gameSession: LocalGameSession | null = null;
 	private botPlayer: BotPlayer | null = null;
-	private playerId: string;
-	private playerName: string;
+	private playerId: PlayerID;
 
-	constructor(playerId: string, playerName: string) {
+	constructor(playerId: PlayerID) {
 		this.playerId = playerId;
-		this.playerName = playerName;
 	}
 
 	/**
 	 * Initialize game session and bot player
 	 */
-	public initializeGame(botId: string = "bot", botName: string = "Bot Opponent"): void {
+	public initializeGame(): void {
 		this.gameSession = new LocalGameSession(
 			this.playerId,
-			this.playerName,
-			botId,
-			botName
+			"Player",
+			PlayerID.OPPONENT,
+			"Opponent"
 		);
 
-		this.botPlayer = new BotPlayer(botId, this.gameSession, 1000);
+		this.botPlayer = new BotPlayer(PlayerID.OPPONENT, this.gameSession, 1000);
 	}
 
 	/**
@@ -47,7 +46,7 @@ export class GameManager {
 	/**
 	 * Get player ID
 	 */
-	public getPlayerId(): string {
+	public getPlayerId(): PlayerID {
 		return this.playerId;
 	}
 
@@ -55,7 +54,7 @@ export class GameManager {
 	 * Get player name
 	 */
 	public getPlayerName(): string {
-		return this.playerName;
+		return "Player";
 	}
 
 	/**

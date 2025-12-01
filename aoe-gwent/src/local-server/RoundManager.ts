@@ -1,14 +1,16 @@
+import { PlayerID } from "../shared/types";
+
 /**
  * Manages the 3-round game lifecycle
  */
 export class RoundManager {
 	private roundNumber: number;
-	private roundWins: Map<string, number>;
-	private readonly playerIds: [string, string];
+	private roundWins: Map<PlayerID, number>;
+	private readonly playerIds: [PlayerID, PlayerID];
 	private readonly MAX_ROUNDS = 3;
 	private readonly ROUNDS_TO_WIN = 2;
 
-	constructor(playerIds: [string, string]) {
+	constructor(playerIds: [PlayerID, PlayerID]) {
 		this.playerIds = playerIds;
 		this.roundNumber = 1;
 		this.roundWins = new Map([
@@ -27,7 +29,7 @@ export class RoundManager {
 	/**
 	 * Get round wins for a player
 	 */
-	public getRoundWins(playerId: string): number {
+	public getRoundWins(playerId: PlayerID): number {
 		return this.roundWins.get(playerId) || 0;
 	}
 
@@ -45,9 +47,9 @@ export class RoundManager {
 	 * Record a round winner
 	 * Returns true if the game has ended (someone won 2 rounds)
 	 */
-	public recordRoundWinner(winnerId: string | "tie"): {
+	public recordRoundWinner(winnerId: PlayerID | "tie"): {
 		gameEnded: boolean;
-		gameWinner: string | "tie" | null;
+		gameWinner: PlayerID | "tie" | null;
 	} {
 		if (winnerId !== "tie") {
 			const currentWins = this.roundWins.get(winnerId) || 0;
@@ -70,7 +72,7 @@ export class RoundManager {
 	 */
 	private checkGameEnd(): {
 		gameEnded: boolean;
-		gameWinner: string | "tie" | null;
+		gameWinner: PlayerID | "tie" | null;
 	} {
 		const p1Wins = this.roundWins.get(this.playerIds[0]) || 0;
 		const p2Wins = this.roundWins.get(this.playerIds[1]) || 0;

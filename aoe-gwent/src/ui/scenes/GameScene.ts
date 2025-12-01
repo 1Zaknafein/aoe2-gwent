@@ -50,7 +50,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	public cardContainers!: CardContainerManager;
 	private messageDisplay!: MessageDisplay;
 
-	// Layout constants (based on 16:9 aspect ratio, ~2400x1350 internal resolution)
+	// Layout constants
 	private readonly BOARD_WIDTH = 2400;
 	private readonly BOARD_HEIGHT = 1350;
 	private readonly ROW_HEIGHT = 130;
@@ -137,13 +137,11 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this._opponentMeleeRow.position.set(centerX, 560);
 		this.gameBoard.addChild(this._opponentMeleeRow);
 
-		// Divider - positioned exactly between opponent melee and player melee
 		const opponentMeleeY = 560;
 		const playerMeleeY = 790;
-		const dividerY = (opponentMeleeY + playerMeleeY) / 2; // 675
+		const dividerY = (opponentMeleeY + playerMeleeY) / 2;
 		this.createDividerWithFade(centerX, dividerY, playAreaWidth);
 
-		// Player rows (bottom - starting right after divider with proper spacing)
 		this.playerMeleeRow = new PlayingRowContainer({
 			width: playAreaWidth,
 			height: this.ROW_HEIGHT,

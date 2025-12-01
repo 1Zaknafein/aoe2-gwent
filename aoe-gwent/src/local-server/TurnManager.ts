@@ -1,18 +1,14 @@
+import { PlayerID } from "../shared/types";
+
 /**
- * TurnManager - Handles turn-based logic for the game
- * Responsibilities:
- * - Track current turn player
- * - Validate if a player can act
- * - Handle turn switching
- * - Manage passed players
- * - Handle auto-pass when player has no cards
+ * Handles turn-based logic for the game
  */
 export class TurnManager {
-	private currentTurn: string;
-	private passedPlayers: Set<string>;
-	private readonly playerIds: [string, string];
+	private currentTurn: PlayerID;
+	private passedPlayers: Set<PlayerID>;
+	private readonly playerIds: [PlayerID, PlayerID];
 
-	constructor(playerIds: [string, string], startingPlayer: string) {
+	constructor(playerIds: [PlayerID, PlayerID], startingPlayer: PlayerID) {
 		this.playerIds = playerIds;
 		this.currentTurn = startingPlayer;
 		this.passedPlayers = new Set();
@@ -21,14 +17,14 @@ export class TurnManager {
 	/**
 	 * Get the current turn player ID
 	 */
-	public getCurrentTurn(): string {
+	public getCurrentTurn(): PlayerID {
 		return this.currentTurn;
 	}
 
 	/**
 	 * Get the opponent of a given player
 	 */
-	public getOpponentId(playerId: string): string {
+	public getOpponentId(playerId: PlayerID): PlayerID {
 		const index = this.playerIds.indexOf(playerId);
 		if (index === -1) {
 			throw new Error(`Invalid player ID: ${playerId}`);
@@ -39,7 +35,7 @@ export class TurnManager {
 	/**
 	 * Check if a player can currently act
 	 */
-	public canPlayerAct(playerId: string): boolean {
+	public canPlayerAct(playerId: PlayerID): boolean {
 		// Player cannot act if they've already passed
 		if (this.passedPlayers.has(playerId)) {
 			return false;
@@ -68,7 +64,7 @@ export class TurnManager {
 	/**
 	 * Handle a player passing their turn
 	 */
-	public passTurn(playerId: string): void {
+	public passTurn(playerId: PlayerID): void {
 		if (!this.canPlayerAct(playerId)) {
 			throw new Error("Player cannot pass turn");
 		}
@@ -80,7 +76,7 @@ export class TurnManager {
 	/**
 	 * Mark a player as passed (without switching turn)
 	 */
-	public markPlayerPassed(playerId: string): void {
+	public markPlayerPassed(playerId: PlayerID): void {
 		this.passedPlayers.add(playerId);
 	}
 
@@ -94,7 +90,7 @@ export class TurnManager {
 	/**
 	 * Reset for new round
 	 */
-	public resetRound(startingPlayer: string): void {
+	public resetRound(startingPlayer: PlayerID): void {
 		this.passedPlayers.clear();
 		this.currentTurn = startingPlayer;
 	}
@@ -103,7 +99,7 @@ export class TurnManager {
 	 * Auto-pass if player has no cards left
 	 * Returns true if player was auto-passed
 	 */
-	public autoPass(playerId: string, handSize: number): boolean {
+	public autoPass(playerId: PlayerID, handSize: number): boolean {
 		if (handSize === 0 && !this.passedPlayers.has(playerId)) {
 			this.passedPlayers.add(playerId);
 			return true;

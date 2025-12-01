@@ -2,21 +2,18 @@ import { LocalGameSession } from "./LocalGameSession";
 import { ActionType, PlayerAction } from "./GameTypes";
 import { CardDatabase } from "./CardDatabase";
 import { CardType } from "../shared/types/CardTypes";
+import { PlayerID } from "../shared/types";
 
 /**
- * BotPlayer - AI opponent for local games
- * Implements simple decision-making logic:
- * - Plays cards based on type (melee/ranged/siege)
- * - Decides when to pass
- * - Responds to game state changes
+ * AI opponent for local games
  */
 export class BotPlayer {
-	private botId: string;
+	private botId: PlayerID;
 	private gameSession: LocalGameSession;
 	private thinkingDelay: number;
 
 	constructor(
-		botId: string,
+		botId: PlayerID,
 		gameSession: LocalGameSession,
 		thinkingDelay: number = 1000
 	) {
