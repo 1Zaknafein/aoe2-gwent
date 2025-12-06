@@ -1,24 +1,16 @@
 import { Card } from "../../entities/card/Card";
 import { PlayingRowContainer, HandContainer } from "../../entities/card";
 import { CardType } from "../../shared/types/CardTypes";
-import { LocalGameController } from "../../shared/game/LocalGameController";
-import { LocalGameSession } from "../../local-server/LocalGameSession";
-import { ActionType } from "../../local-server/GameTypes";
-import { PlayerID } from "../../shared/types";
 import { gsap } from "gsap";
 
 /**
- * Manages all user interactions for the TestBoardScene
+ * Manages user interactions with the game board.
  * Handles card selection, hover effects, and placement logic
  */
 export class GameBoardInteractionManager {
 	private selectedCard: Card | null = null;
-	private cardClickInProgress: boolean = false;
-	private gameController: LocalGameController | null = null;
-	private gameSession: LocalGameSession | null = null;
-	private playerId: PlayerID | null = null;
+	private cardClickInProgress = false;
 
-	// References to containers
 	private playerHand: HandContainer;
 	private playerMeleeRow: PlayingRowContainer;
 	private playerRangedRow: PlayingRowContainer;
@@ -34,24 +26,9 @@ export class GameBoardInteractionManager {
 		this.playerMeleeRow = playerMeleeRow;
 		this.playerRangedRow = playerRangedRow;
 		this.playerSiegeRow = playerSiegeRow;
-	}
 
-	/**
-	 * Set the GameController for multiplayer interactions
-	 */
-	public setGameController(gameController: LocalGameController): void {
-		this.gameController = gameController;
-	}
-
-	/**
-	 * Set game session for turn management
-	 */
-	public setGameSession(
-		gameSession: LocalGameSession,
-		playerId: PlayerID
-	): void {
-		this.gameSession = gameSession;
-		this.playerId = playerId;
+		this.setupPlayerHandInteractions();
+		this.setupRowInteractions();
 	}
 
 	/**
@@ -62,7 +39,6 @@ export class GameBoardInteractionManager {
 			this.setupCardInteractions(card);
 		});
 
-		// Listen for new cards being added to the hand
 		this.playerHand.on("cardAdded", (data) => {
 			if (data.card && data.container === this.playerHand) {
 				this.setupCardInteractions(data.card);
@@ -93,7 +69,7 @@ export class GameBoardInteractionManager {
 			row.setContainerInteractive(true);
 			row.on("containerClick", () => {
 				if (this.selectedCard) {
-					this.placeSelectedCard(row);
+					this.notifyCardAction(row);
 				}
 			});
 		});
@@ -116,10 +92,8 @@ export class GameBoardInteractionManager {
 	}
 
 	private onCardHover(card: Card, isHovering: boolean): void {
-		// Only apply hover effects to cards in player hand
 		if (card.parent !== this.playerHand) return;
 
-		// Don't apply hover effects to selected cards
 		if (this.selectedCard === card) return;
 
 		const targetY = isHovering ? -12 : 0;
@@ -133,9 +107,8 @@ export class GameBoardInteractionManager {
 	}
 
 	private onCardClick(card: Card, event: any): void {
-		event.stopPropagation(); // Prevent global click handler
+		event.stopPropagation();
 
-		// Only allow selection of cards in player hand
 		if (card.parent !== this.playerHand) {
 			return;
 		}
@@ -167,10 +140,7 @@ export class GameBoardInteractionManager {
 			ease: "power2.out",
 		});
 
-		// Highlight valid placement rows
 		this.highlightValidRows(card.cardData.type);
-
-		console.log(`✅ Selected: ${card.cardData.name}`);
 	}
 
 	private deselectCard(): void {
@@ -178,20 +148,18 @@ export class GameBoardInteractionManager {
 
 		const card = this.selectedCard;
 
-		// Return card to normal position
 		gsap.to(card, {
 			y: 0,
 			duration: 0.3,
 			ease: "power2.out",
 		});
 
-		// Clear all row highlights
 		this.clearRowHighlights();
 
 		this.selectedCard = null;
 	}
 
-	private async placeSelectedCard(
+	private async notifyCardAction(
 		targetRow: PlayingRowContainer
 	): Promise<void> {
 		if (!this.selectedCard) return;
@@ -200,50 +168,12 @@ export class GameBoardInteractionManager {
 			return;
 		}
 
-		const cardId = this.selectedCard.cardData.id;
-
-		let targetRowName: "melee" | "ranged" | "siege";
-		if (targetRow === this.playerMeleeRow) {
-			targetRowName = "melee";
-		} else if (targetRow === this.playerRangedRow) {
-			targetRowName = "ranged";
-		} else if (targetRow === this.playerSiegeRow) {
-			targetRowName = "siege";
-		} else {
-			return;
-		}
-
 		this.clearRowHighlights();
 
+		// Card placement is done GameManager, here we just notify where card should be placed.
+		this.playerHand.emit("playerCardPlacement", this.selectedCard, targetRow);
+
 		this.selectedCard = null;
-
-		if (this.gameController) {
-			this.gameController.placeCard(cardId, targetRowName);
-		} else {
-			const cardIndex = this.playerHand
-				.getAllCards()
-				.findIndex((c) => c.cardData.id === cardId);
-			if (cardIndex === -1) return;
-
-			await this.playerHand.transferCardTo(cardIndex, targetRow);
-
-			targetRow.updateScore();
-
-			if (this.gameSession && this.playerId !== null) {
-				const result = this.gameSession.processAction({
-					type: ActionType.PLACE_CARD,
-					playerId: this.playerId,
-					cardId,
-					targetRow: targetRowName,
-				});
-
-				if (!result.success) {
-					console.error("Failed to update game session:", result.error);
-				}
-			}
-
-			this.playerHand.emit("cardPlacementComplete");
-		}
 	}
 
 	private highlightValidRows(cardType: CardType): void {

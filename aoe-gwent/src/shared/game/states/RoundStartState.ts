@@ -1,39 +1,37 @@
-import { GameState, StateName } from "./GameState";
+import { Player } from "../../../entities/player/Player";
 import { GameContext } from "../GameContext";
-import { MessageDisplay } from "../../../ui/components";
+import { State, StateName } from "./State";
 
 /**
- * RoundStartState - Prepares for a new round
+ * State for starting a new round.
  */
-export class RoundStartState extends GameState {
-  private _messageDisplay: MessageDisplay;
+export class RoundStartState extends State {
+	private _player: Player;
 
-  constructor(context: GameContext) {
-    super(context);
+	constructor(context: GameContext) {
+		super(context);
+		this._player = context.player;
+	}
 
-    this._messageDisplay = context.messageDisplay;
-  }
+	public async execute(): Promise<StateName> {
+		if (this.gameManager.gameData.roundNumber === 0) {
+			this.gameManager.startGame();
+		}
 
-  public async execute(): Promise<StateName> {
-    console.log(
-      `[RoundStartState] Starting round ${this.gameManager.getCurrentRound()}`
-    );
+		this.gameManager.startRound();
 
-    await this.delay(0.3);
+		await this.messageDisplay.showMessage(
+			"Round " + this.gameManager.gameData.roundNumber + " starts!"
+		);
 
-    await this._messageDisplay.showMessage(
-      "Round " + this.gameManager.getCurrentRound() + " starts!"
-    );
+		this._player.hand.setCardsInteractive(false);
 
-    const playerHand = this.cardDealingManager.getPlayerHand();
-    playerHand.setCardsInteractive(false);
+		const startingPlayerId = this.gameManager.gameData.currentTurn;
 
-    // TODO Implement round start logic
-    // - Clear passed players
-    // - Determine starting player for this round
-    // - Display round start message/animation
-    // - Apply any round-specific effects
+		if (startingPlayerId === this._player.id) {
+			return StateName.PLAYER_ACTION;
+		}
 
-    return StateName.PLAYER_ACTION;
-  }
+		return StateName.ENEMY_ACTION;
+	}
 }

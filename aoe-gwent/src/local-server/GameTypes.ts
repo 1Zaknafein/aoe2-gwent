@@ -1,3 +1,5 @@
+import { Card, CardContainer } from "../entities/card";
+import { Player } from "../entities/player/Player";
 import { PlayerID } from "../shared/types";
 
 /**
@@ -5,7 +7,7 @@ import { PlayerID } from "../shared/types";
  */
 
 export enum GamePhase {
-	WAITING_FOR_GAME_START = "waiting_for_game_start",
+	WAITING_FOR_ROUND_START = "waiting_for_game_start",
 	PLAYER_TURN = "player_turn",
 	ENEMY_TURN = "enemy_turn",
 	ROUND_END = "round_end",
@@ -18,29 +20,25 @@ export enum ActionType {
 	DRAW_CARD = "draw_card",
 }
 
-export interface GameState {
+export interface GameData {
 	phase: GamePhase;
 	currentTurn: PlayerID;
 	roundNumber: number;
-	scores: Map<PlayerID, number>;
-	passedPlayers: Set<PlayerID>;
-	startingPlayer: PlayerID;
-	handSizes: Map<PlayerID, number>;
-	gameStarted: boolean;
+	roundWinner: PlayerID | null;
 }
 
 export interface PlayerAction {
+	player: Player;
 	type: ActionType;
-	playerId: PlayerID;
-	cardId?: number;
-	targetRow?: "melee" | "ranged" | "siege";
+	card?: Card;
+	// TODO: Replace targetRow with specific card container type, which may include more than one CardType.
+	// For now there are no multi-row cards.
+	targetRow?: CardContainer;
 }
 
 export interface GameSession {
-	readonly roomId: string;
 	readonly playerIds: [PlayerID, PlayerID];
-	readonly playerNames: Map<PlayerID, string>;
-	gameState: GameState;
+	gameState: GameData;
 	playerHands: Map<PlayerID, number[]>;
 	playerDecks: Map<PlayerID, number[]>;
 	playerBoards: Map<

@@ -1,135 +1,108 @@
-import { GameState, StateName } from "./states/GameState";
+import { State, StateName } from "./states/State";
 
 /**
  * GameStateMachine - Manages game state transitions
  * Ensures only valid state transitions occur
  */
 export class GameStateMachine {
-  private currentState: GameState | null = null;
-  private currentStateName: StateName | null = null;
-  private states: Map<StateName, GameState>;
-  private isRunning: boolean = false;
+	private currentState: State | null = null;
+	private currentStateName: StateName | null = null;
+	private states: Map<StateName, State>;
+	private isRunning: boolean = false;
 
-  // prettier-ignore
-  private readonly transitions: Map<StateName, StateName[]> = new Map([
-    [StateName.SETUP, [StateName.GAME_START]],
-    [StateName.GAME_START, [StateName.ROUND_START]], 
+	// prettier-ignore
+	private readonly transitions: Map<StateName, StateName[]> = new Map([
+
     [StateName.ROUND_START, [StateName.PLAYER_ACTION, StateName.ENEMY_ACTION]],
     [StateName.PLAYER_ACTION,[StateName.PLAYER_ACTION, StateName.ENEMY_ACTION, StateName.ROUND_END]],
     [StateName.ENEMY_ACTION, [StateName.ENEMY_ACTION, StateName.PLAYER_ACTION, StateName.ROUND_END]],
     [StateName.ROUND_END, [StateName.ROUND_START, StateName.RESOLUTION]],
-    [StateName.RESOLUTION, [StateName.GAME_START]],
+    [StateName.RESOLUTION, [StateName.ROUND_START]],
   ]);
 
-  constructor(states: Map<StateName, GameState>) {
-    this.states = states;
-  }
+	constructor(states: Map<StateName, State>) {
+		this.states = states;
+	}
 
-  /**
-   * Start the state machine with SetupState
-   */
-  public async start(): Promise<void> {
-    if (this.isRunning) {
-      console.warn("State machine is already running");
-      return;
-    }
+	/**
+	 * Start the state machine with SetupState
+	 */
+	public async start(): Promise<void> {
+		if (this.isRunning) {
+			console.warn("State machine is already running");
+			return;
+		}
 
-    const setupState = this.states.get(StateName.SETUP);
-    if (!setupState) {
-      throw new Error("SetupState not found in state map");
-    }
+		const roundStartState = this.states.get(StateName.ROUND_START);
+		if (!roundStartState) {
+			throw new Error("RoundStartState not found in state map");
+		}
 
-    console.log("Starting game state machine...");
-    this.isRunning = true;
-    this.currentState = setupState;
-    this.currentStateName = StateName.SETUP;
-    await this.run();
-  }
+		this.isRunning = true;
+		this.currentState = roundStartState;
+		this.currentStateName = StateName.ROUND_START;
 
-  /**
-   * Run the state machine loop
-   */
-  private async run(): Promise<void> {
-    while (this.isRunning && this.currentState && this.currentStateName) {
-      const nextStateName = await this.currentState.execute();
+		await this.run();
+	}
 
-      if (!this.isValidTransition(this.currentStateName, nextStateName)) {
-        console.error(
-          `Invalid state transition: ${this.currentStateName} -> ${nextStateName}`
-        );
-        this.stop();
-        break;
-      }
+	/**
+	 * Run the state machine loop
+	 */
+	private async run(): Promise<void> {
+		while (this.isRunning && this.currentState && this.currentStateName) {
+			const nextStateName = await this.currentState.execute();
 
-      console.log(
-        `Transitioning: ${this.currentStateName} -> ${nextStateName}`
-      );
+			if (!this.isValidTransition(this.currentStateName, nextStateName)) {
+				console.error(
+					`Invalid state transition: ${this.currentStateName} -> ${nextStateName}`
+				);
+				this.stop();
+				break;
+			}
 
-      const nextState = this.states.get(nextStateName);
+			const nextState = this.states.get(nextStateName);
 
-      if (!nextState) {
-        console.error(`State not found in map: ${nextStateName}`);
-        this.stop();
+			if (!nextState) {
+				console.error(`State not found in map: ${nextStateName}`);
+				this.stop();
 
-        break;
-      }
+				break;
+			}
 
-      this.currentState = nextState;
-      this.currentStateName = nextStateName;
-    }
+			this.currentState = nextState;
+			this.currentStateName = nextStateName;
+		}
+	}
 
-    console.log("🏁 State machine stopped");
-  }
+	/**
+	 * Check if a state transition is valid
+	 */
+	private isValidTransition(fromState: StateName, toState: StateName): boolean {
+		const allowedTransitions = this.transitions.get(fromState);
+		if (!allowedTransitions) {
+			return false;
+		}
+		return allowedTransitions.includes(toState);
+	}
 
-  /**
-   * Check if a state transition is valid
-   */
-  private isValidTransition(fromState: StateName, toState: StateName): boolean {
-    const allowedTransitions = this.transitions.get(fromState);
-    if (!allowedTransitions) {
-      return false;
-    }
-    return allowedTransitions.includes(toState);
-  }
+	/**
+	 * Stop the state machine
+	 */
+	public stop(): void {
+		this.isRunning = false;
+	}
 
-  /**
-   * Stop the state machine
-   */
-  public stop(): void {
-    this.isRunning = false;
-    console.log("State machine stopped");
-  }
+	/**
+	 * Get current state
+	 */
+	public getCurrentState(): State | null {
+		return this.currentState;
+	}
 
-  /**
-   * Get current state
-   */
-  public getCurrentState(): GameState | null {
-    return this.currentState;
-  }
-
-  /**
-   * Get current state name
-   */
-  public getCurrentStateName(): StateName | null {
-    return this.currentStateName;
-  }
-
-  /**
-   * Resume the state machine from current state
-   */
-  public async resume(): Promise<void> {
-    if (this.isRunning) {
-      console.warn("State machine is already running");
-      return;
-    }
-
-    if (!this.currentState) {
-      console.error("Cannot resume: no current state");
-      return;
-    }
-
-    console.log(`Resuming state machine from ${this.getCurrentStateName()}...`);
-    this.isRunning = true;
-    await this.run();
-  }
+	/**
+	 * Get current state name
+	 */
+	public getCurrentStateName(): StateName | null {
+		return this.currentStateName;
+	}
 }

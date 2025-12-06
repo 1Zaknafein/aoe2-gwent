@@ -1,21 +1,38 @@
-import { Color, FillGradient } from "pixi.js";
 import {
-	PixiContainer,
-	PixiSprite,
-	PixiText,
-	PixiGraphics,
-} from "../../plugins/engine";
+	Color,
+	Container,
+	FillGradient,
+	Graphics,
+	Sprite,
+	Text,
+	TextStyle,
+} from "pixi.js";
 import { CardFaceTextures } from "../../shared/database/CardFaceTextures.js";
 import gsap from "gsap";
 
-export class Card extends PixiContainer {
+export class Card extends Container {
 	private _cardData: CardData;
-	private _cardBack!: PixiSprite;
-	private _cardFace!: PixiSprite;
-	private _scoreText!: PixiText;
-	private _typeIcon!: PixiSprite;
-	private _scoreBackground!: PixiGraphics;
+	private _cardBack!: Sprite;
+	private _cardFace!: Sprite;
+	private _scoreText!: Text;
+	private _typeIcon!: Sprite;
+	private _scoreBackground!: Graphics;
 	private _showingBack: boolean = false;
+
+	private static SCORE_TEXT_STYLE: Partial<TextStyle> = {
+		fontFamily: "Arial",
+		fontSize: 34,
+		fontWeight: "bold",
+		fill: "#ffd500",
+		stroke: { color: "#000000", width: 1 },
+		dropShadow: {
+			distance: 2,
+			angle: 1.5,
+			blur: 2,
+			color: "#000000",
+			alpha: 1,
+		},
+	};
 
 	constructor(cardData: CardData) {
 		super();
@@ -26,21 +43,25 @@ export class Card extends PixiContainer {
 		this.cursor = "pointer";
 	}
 
+	public get cardData(): CardData {
+		return this._cardData;
+	}
+
 	private createCard(): void {
-		this._cardBack = PixiSprite.from("card_back");
+		this._cardBack = Sprite.from("card_back");
 		this._cardBack.anchor.set(0.5);
 		this._cardBack.visible = false;
 		this.addChild(this._cardBack);
 
 		// Get face texture from card ID using CardFaceTextures
 		const faceTexture = CardFaceTextures.getTexture(this._cardData.id);
-		this._cardFace = PixiSprite.from(faceTexture);
+		this._cardFace = Sprite.from(faceTexture);
 		this._cardFace.anchor.set(0.5);
 		this._cardFace.visible = true;
 		this._cardFace.scale.set(0.5);
 		this.addChild(this._cardFace);
 
-		this._scoreBackground = new PixiGraphics();
+		this._scoreBackground = new Graphics();
 
 		const radius = 25;
 
@@ -65,24 +86,9 @@ export class Card extends PixiContainer {
 		this._scoreBackground.visible = true;
 		this.addChild(this._scoreBackground);
 
-		// this._scoreBackground.filters = [ANTIALIAS_FILTER];
-
-		this._scoreText = new PixiText({
+		this._scoreText = new Text({
 			text: this._cardData.score.toString(),
-			style: {
-				fontFamily: "Arial",
-				fontSize: 34,
-				fontWeight: "bold",
-				fill: "#ffd500",
-				stroke: { color: "#000000", width: 1 },
-				dropShadow: {
-					distance: 2,
-					angle: 1.5,
-					blur: 2,
-					color: "#000000",
-					alpha: 1,
-				},
-			},
+			style: Card.SCORE_TEXT_STYLE,
 		});
 
 		this._scoreText.anchor.set(0.5);
@@ -92,17 +98,13 @@ export class Card extends PixiContainer {
 		this.addChild(this._scoreText);
 
 		const iconTexture = `icon_${this._cardData.type}`;
-		this._typeIcon = PixiSprite.from(iconTexture);
+		this._typeIcon = Sprite.from(iconTexture);
 		this._typeIcon.anchor.set(0.5);
 		this._typeIcon.scale.set(1.2);
 		this._typeIcon.x = (this._cardFace.width - this._typeIcon.width) / 2;
 		this._typeIcon.y = (this._cardFace.height - this._typeIcon.height) / 2;
 		this._typeIcon.visible = true;
 		this.addChild(this._typeIcon);
-	}
-
-	public get cardData(): CardData {
-		return this._cardData;
 	}
 
 	public get showingBack(): boolean {
@@ -123,12 +125,12 @@ export class Card extends PixiContainer {
 
 		// Get face texture from card ID using CardFaceTextures
 		const faceTexture = CardFaceTextures.getTexture(newCardData.id);
-		this._cardFace.texture = PixiSprite.from(faceTexture).texture;
+		this._cardFace.texture = Sprite.from(faceTexture).texture;
 
 		this._scoreText.text = newCardData.score.toString();
 
 		const iconTexture = `icon_${newCardData.type}`;
-		this._typeIcon.texture = PixiSprite.from(iconTexture).texture;
+		this._typeIcon.texture = Sprite.from(iconTexture).texture;
 	}
 
 	/**
@@ -146,10 +148,8 @@ export class Card extends PixiContainer {
 				duration: 0.15,
 				ease: "power2.in",
 				onComplete: () => {
-					// Switch to front view at the middle of animation
 					this.showFront();
 
-					// Animate scale back to 1
 					gsap.to(this.scale, {
 						x: 1,
 						duration: 0.15,

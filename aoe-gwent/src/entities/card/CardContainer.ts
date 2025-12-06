@@ -18,7 +18,7 @@ export class CardContainer extends PixiContainer {
 	private _areCardsInteractive: boolean = true;
 	private _containerType: CardType | null = null;
 	private _layoutType: CardContainerLayoutType = CardContainerLayoutType.SPREAD;
-	protected _cardScale: number = 1.0; // Default card scale, can be overridden by subclasses
+	protected _cardScale: number = 1;
 
 	/**
 	 * Create a new CardContainer.
@@ -30,17 +30,15 @@ export class CardContainer extends PixiContainer {
 	 */
 	constructor(
 		maxWidth: number,
-		label: string,
 		containerType?: CardType,
 		layoutType?: CardContainerLayoutType,
 		cardScale?: number
 	) {
 		super();
 		this._maxWidth = maxWidth;
-		this.label = label;
 		this._containerType = containerType || null;
 		this._layoutType = layoutType || CardContainerLayoutType.SPREAD;
-		this._cardScale = cardScale ?? 1.0;
+		this._cardScale = cardScale ?? 1;
 	}
 
 	public get cardCount(): number {
@@ -49,6 +47,10 @@ export class CardContainer extends PixiContainer {
 
 	public get maxWidth(): number {
 		return this._maxWidth;
+	}
+
+	public get cards() {
+		return this._cards;
 	}
 
 	public get isContainerInteractive(): boolean {
@@ -286,9 +288,7 @@ export class CardContainer extends PixiContainer {
 		});
 
 		// Wait for all animations to complete
-		return Promise.all(animationPromises).then(() => {
-			// All animations complete
-		});
+		return Promise.all(animationPromises).then(() => {});
 	}
 
 	/**
@@ -369,19 +369,21 @@ export class CardContainer extends PixiContainer {
 	};
 
 	public async transferCardTo(
-		cardIndex: number,
+		card: Card,
 		targetContainer: CardContainer
 	): Promise<void> {
-		if (cardIndex < 0 || cardIndex >= this._cards.length) return;
+		const cardIndex = this._cards.indexOf(card);
+
+		if (cardIndex < 0 || cardIndex >= this._cards.length) {
+			throw new Error("Card not found in this container");
+		}
 
 		const cardToTransfer = this._cards[cardIndex];
 
 		const sourceScale = this.scale.x;
 		const targetScale = targetContainer.scale.x;
 
-		// Use source container's card scale
 		const sourceCardScale = this._cardScale;
-		// Use target container's card scale
 		const targetCardScale = targetContainer._cardScale;
 
 		// Calculate where this card will be positioned in the target container

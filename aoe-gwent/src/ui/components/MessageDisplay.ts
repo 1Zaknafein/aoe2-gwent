@@ -72,14 +72,14 @@ export class MessageDisplay extends PixiContainer {
 		this._timeline
 			.to(this, {
 				alpha: 1,
-				duration: 0.1,
+				duration: 0.4,
 				ease: "power2.out",
 			})
 			.to(
 				this,
 				{
 					alpha: 0,
-					duration: 0.1,
+					duration: 0.4,
 					ease: "power2.in",
 				},
 				"+=0.3"

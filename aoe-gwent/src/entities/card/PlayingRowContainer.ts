@@ -7,14 +7,12 @@ import { gsap } from "gsap";
 export interface PlayingRowConfig {
 	width: number;
 	height: number;
-	labelText: string;
 	labelColor: number;
 	containerType: CardType;
 }
 
 /**
- * Specialized container for playing rows (Melee, Ranged, Siege) with decorative graphics,
- * highlighting support, labels, and score displays.
+ * Specialized container for playing rows (Melee, Ranged, Siege).
  */
 export class PlayingRowContainer extends CardContainer {
 	private rowBackground: PixiGraphics;
@@ -22,11 +20,11 @@ export class PlayingRowContainer extends CardContainer {
 	private typeIcon: PixiSprite;
 	private scoreText: Text;
 	private config: PlayingRowConfig;
+	private _score = 0;
 
 	constructor(config: PlayingRowConfig) {
 		super(
 			config.width - 200, // Card area width (leaving space for label and score)
-			config.labelText,
 			config.containerType,
 			CardContainerLayoutType.SPREAD,
 			0.5 // Cards in playing rows are scaled to 0.5
@@ -34,29 +32,34 @@ export class PlayingRowContainer extends CardContainer {
 
 		this.config = config;
 
-		// Create all visual components
 		this.rowBackground = this.createBackground();
 		this.highlightOverlay = this.createHighlight();
 		this.typeIcon = this.createTypeIcon();
-		this.scoreText = this.createScore();
+		this.scoreText = this.createScoreText();
 
-		// Add to container in correct order (background first, then cards, then overlays)
 		this.addChildAt(this.rowBackground, 0);
 		this.addChild(this.highlightOverlay);
 		this.addChild(this.typeIcon);
 		this.addChild(this.scoreText);
 
-		// Cards are not interactive by default in playing rows
 		this.setCardsInteractive(false);
+
+		this.on("cardAdded", () => {
+			this.updateScore();
+		});
+
+		this.on("cardRemoved", () => {
+			this.updateScore();
+		});
 	}
 
-		/**
+	/**
 	 * Show the highlight overlay
 	 */
 	public showHighlight(): void {
 		// Kill any existing animations first to prevent conflicts
 		gsap.killTweensOf(this.highlightOverlay);
-		
+
 		this.highlightOverlay.visible = true;
 		this.highlightOverlay.alpha = 0.4;
 	}
@@ -73,7 +76,7 @@ export class PlayingRowContainer extends CardContainer {
 			ease: "power2.out",
 			onComplete: () => {
 				this.highlightOverlay.visible = false;
-			}
+			},
 		});
 	}
 
@@ -83,23 +86,19 @@ export class PlayingRowContainer extends CardContainer {
 	public updateScore(): void {
 		let newScore = 0;
 
-		this.getAllCards().forEach(card => {
+		this.getAllCards().forEach((card) => {
 			newScore += card.cardData.score;
 		});
 
-		
 		this.scoreText.text = newScore.toString();
+		this._score = newScore;
 	}
 
 	/**
 	 * Get the current score
 	 */
-	public getScore(): number {
-		let totalScore = 0;
-		this.getAllCards().forEach(card => {
-			totalScore += card.cardData.score;
-		});
-		return totalScore;
+	public get score(): number {
+		return this._score;
 	}
 
 	private createBackground(): PixiGraphics {
@@ -141,9 +140,15 @@ export class PlayingRowContainer extends CardContainer {
 
 		// Bottom-right corner
 		bg.moveTo(bgX + width - cornerInset, bgY + height - cornerInset);
-		bg.lineTo(bgX + width - cornerInset - cornerSize, bgY + height - cornerInset);
+		bg.lineTo(
+			bgX + width - cornerInset - cornerSize,
+			bgY + height - cornerInset
+		);
 		bg.moveTo(bgX + width - cornerInset, bgY + height - cornerInset);
-		bg.lineTo(bgX + width - cornerInset, bgY + height - cornerInset - cornerSize);
+		bg.lineTo(
+			bgX + width - cornerInset,
+			bgY + height - cornerInset - cornerSize
+		);
 
 		bg.stroke({ color: 0xffd700, width: 2, alpha: 0.5 });
 
@@ -160,7 +165,7 @@ export class PlayingRowContainer extends CardContainer {
 		highlight.fill({ color: 0x00ff00, alpha: 0.15 });
 		highlight.stroke({ color: 0x00ff00, width: 3, alpha: 0.6 });
 		highlight.visible = false;
-		highlight.eventMode = 'none'; // Don't block pointer events
+		highlight.eventMode = "none"; // Don't block pointer events
 
 		return highlight;
 	}
@@ -173,16 +178,16 @@ export class PlayingRowContainer extends CardContainer {
 		let iconName: string;
 		switch (containerType) {
 			case CardType.MELEE:
-				iconName = 'icon_melee';
+				iconName = "icon_melee";
 				break;
 			case CardType.RANGED:
-				iconName = 'icon_ranged';
+				iconName = "icon_ranged";
 				break;
 			case CardType.SIEGE:
-				iconName = 'icon_siege';
+				iconName = "icon_siege";
 				break;
 			default:
-				iconName = 'icon_melee';
+				iconName = "icon_melee";
 		}
 
 		const icon = PixiSprite.from(iconName);
@@ -194,23 +199,21 @@ export class PlayingRowContainer extends CardContainer {
 		return icon;
 	}
 
-	private createScore(): Text {
+	private createScoreText(): Text {
 		const { width, labelColor } = this.config;
 		const bgX = -width / 2;
 
 		const scoreStyle = new TextStyle({
-			fontFamily: 'Cinzel, serif',
+			fontFamily: "Cinzel, serif",
 			fontSize: 48,
 			fill: labelColor,
-			fontWeight: 'bold'
+			fontWeight: "bold",
 		});
 
-		const score = new Text({ text: '0', style: scoreStyle });
+		const score = new Text({ text: "0", style: scoreStyle });
 		score.position.set(bgX + width - 60, 0);
 		score.anchor.set(0.5);
 
 		return score;
 	}
-
-
 }

@@ -1,17 +1,13 @@
 import { GameManager } from "../GameManager";
 import { GameContext } from "../GameContext";
-import { CardDealingManager } from "../../../ui/managers/CardDealingManager";
 import { MessageDisplay } from "../../../ui/components/MessageDisplay";
 import { PlayerDisplayManager } from "../../../entities/player";
 import { GameBoardInteractionManager } from "../../../ui/scenes/GameBoardInteractionManager";
-import { PlayingRowContainer } from "../../../entities/card";
 
 /**
  * Enum for all possible game states
  */
 export enum StateName {
-	SETUP = "SETUP",
-	GAME_START = "GAME_START",
 	ROUND_START = "ROUND_START",
 	PLAYER_ACTION = "PLAYER_ACTION",
 	ENEMY_ACTION = "ENEMY_ACTION",
@@ -22,25 +18,17 @@ export enum StateName {
 /**
  * Base class for all game states
  */
-export abstract class GameState {
+export abstract class State {
 	protected gameManager: GameManager;
-	protected cardDealingManager: CardDealingManager;
 	protected messageDisplay: MessageDisplay;
 	protected playerDisplayManager: PlayerDisplayManager;
 	protected interactionManager: GameBoardInteractionManager;
-	protected opponentRows: {
-		melee: PlayingRowContainer;
-		ranged: PlayingRowContainer;
-		siege: PlayingRowContainer;
-	};
 
 	constructor(context: GameContext) {
 		this.gameManager = context.gameManager;
-		this.cardDealingManager = context.cardDealingManager;
 		this.messageDisplay = context.messageDisplay;
 		this.playerDisplayManager = context.playerDisplayManager;
 		this.interactionManager = context.interactionManager;
-		this.opponentRows = context.opponentRows;
 	}
 
 	/**

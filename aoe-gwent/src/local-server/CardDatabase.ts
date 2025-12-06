@@ -1,18 +1,24 @@
+import { CardData } from "../entities/card";
 import { CardType } from "../shared/types/CardTypes";
-
-export interface ServerCardData {
-	id: number;
-	name: string;
-	score: number;
-	type: CardType;
-}
 
 /**
  * Local card database that stores card definitions.
- * Ported from server/src/database/CardDatabase.ts
  */
 export class CardDatabase {
-	private static readonly cards: ServerCardData[] = [
+	public static generateRandomDeck(size: number): CardData[] {
+		const deck = [];
+
+		for (let i = 0; i < size; i++) {
+			const randomCard =
+				this.cards[Math.floor(Math.random() * this.cards.length)];
+
+			deck.push(randomCard);
+		}
+
+		return deck;
+	}
+
+	private static readonly cards: CardData[] = [
 		{
 			id: 1,
 			name: "Knight",
@@ -49,47 +55,5 @@ export class CardDatabase {
 			score: 2,
 			type: CardType.RANGED,
 		},
-		{
-			id: 7,
-			name: "Skirmisher",
-			score: 2,
-			type: CardType.RANGED,
-		},
-		{
-			id: 8,
-			name: "Trebuchet",
-			score: 10,
-			type: CardType.SIEGE,
-		},
-		{
-			id: 9,
-			name: "Bombard Cannon",
-			score: 6,
-			type: CardType.SIEGE,
-		},
-		{
-			id: 10,
-			name: "Pikeman",
-			score: 4,
-			type: CardType.MELEE,
-		},
-	];
-
-	public static getCardById(id: number): ServerCardData | undefined {
-		return this.cards.find((card) => card.id === id);
-	}
-
-	public static getAllCards(): ServerCardData[] {
-		return [...this.cards];
-	}
-
-	public static generateRandomDeck(size: number): number[] {
-		const deck: number[] = [];
-		for (let i = 0; i < size; i++) {
-			const randomCard =
-				this.cards[Math.floor(Math.random() * this.cards.length)];
-			deck.push(randomCard.id);
-		}
-		return deck;
-	}
+	] as const;
 }

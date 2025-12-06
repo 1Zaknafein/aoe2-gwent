@@ -1,84 +1,82 @@
-import { GameState, StateName } from "./GameState";
+import { State, StateName } from "./State";
 import { GameContext } from "../GameContext";
-import { ActionType } from "../../../local-server/GameTypes";
+import {
+	ActionType,
+	GamePhase,
+	PlayerAction,
+} from "../../../local-server/GameTypes";
+import { Player } from "../../../entities/player/Player";
+import { GameManager } from "../GameManager";
+import { CardType } from "../../types/CardTypes";
+import { Card, CardContainer } from "../../../entities/card";
 
 /**
- * PlayerActionState - Waits for and processes player actions
+ * State where player can interact and take actions.
  */
-export class PlayerActionState extends GameState {
-	private isFirstEntry: boolean = true;
+export class PlayerActionState extends State {
+	private _isFirstEntry = true;
+
+	private readonly _player: Player;
+	private readonly _gameManager: GameManager;
 
 	constructor(context: GameContext) {
 		super(context);
+
+		this._player = context.player;
+		this._gameManager = context.gameManager;
 	}
 
 	public async execute(): Promise<StateName> {
-		const playerHand = this.cardDealingManager.getPlayerHand();
 		const passButton = this.playerDisplayManager.playerDisplay.passButton;
-		const gameSession = this.gameManager.getGameSession();
-		const playerId = this.gameManager.getPlayerId();
 
 		if (!passButton) {
 			throw new Error("Pass button not found on player display");
 		}
 
-		if (!gameSession) {
-			throw new Error("Game session not initialized");
-		}
-
 		// Auto-pass if player has no cards
-		if (playerHand.cardCount === 0) {
-			const result = gameSession.processAction({
+		if (this._player.hand.cardCount === 0) {
+			await this._gameManager.handleAction({
+				player: this._player,
 				type: ActionType.PASS_TURN,
-				playerId,
 			});
 
-			if (!result.success) {
-				console.error("Auto-pass failed:", result.error);
+			if (this._gameManager.gameData.phase === GamePhase.ROUND_END) {
+				return StateName.ROUND_END;
 			}
 
-			if (this.gameManager.haveBothPlayersPassed()) {
-				return StateName.ROUND_END;
-			} else {
-				return StateName.ENEMY_ACTION;
-			}
+			return StateName.ENEMY_ACTION;
 		}
 
 		// Only show message on first entry or when returning from another state
-		if (this.isFirstEntry) {
+		if (this._isFirstEntry) {
 			await this.messageDisplay.showMessage("Your turn!");
-			this.isFirstEntry = false;
+			this._isFirstEntry = false;
 		}
 
-		playerHand.setCardsInteractive(true);
-
+		this._player.hand.setCardsInteractive(true);
 		passButton.setEnabled(true);
 
 		const action = await this.waitForPlayerAction();
 
-		playerHand.setCardsInteractive(false);
-
+		this._player.hand.setCardsInteractive(false);
 		passButton.setEnabled(false);
 
-		if (action === "passed") {
-			const result = gameSession.processAction({
-				type: ActionType.PASS_TURN,
-				playerId,
-			});
+		await this._gameManager.handleAction(action);
 
-			if (!result.success) {
-				console.error("Pass turn failed:", result.error);
-			}
+		const gameData = this._gameManager.gameData;
+
+		if (gameData.phase === GamePhase.ROUND_END) {
+			this._isFirstEntry = true;
+
+			return StateName.ROUND_END;
 		}
 
-		if (this.gameManager.haveBothPlayersPassed()) {
-			return StateName.ROUND_END;
-		} else if (this.gameManager.isBotTurn()) {
-			this.isFirstEntry = true;
-			return StateName.ENEMY_ACTION;
-		} else {
-			// Player's turn continues
+		if (gameData.currentTurn === this._player.id) {
 			return StateName.PLAYER_ACTION;
+		} else {
+			this._isFirstEntry = true;
+
+			return StateName.ENEMY_ACTION;
 		}
 	}
 
@@ -86,35 +84,42 @@ export class PlayerActionState extends GameState {
 	 * Wait for the player to either place a card or press the pass button
 	 * Returns the action that occurred
 	 */
-	private async waitForPlayerAction(): Promise<"cardPlaced" | "passed"> {
-		return new Promise<"cardPlaced" | "passed">((resolve) => {
-			const playerHand = this.cardDealingManager.getPlayerHand();
-			const playerDisplay = this.playerDisplayManager.playerDisplay;
-			const passButton = playerDisplay.passButton;
+	private async waitForPlayerAction(): Promise<PlayerAction> {
+		return new Promise<PlayerAction>((resolve) => {
+			const playerHand = this._player.hand;
+			const passButton = this.playerDisplayManager.playerDisplay.passButton;
 
 			if (!passButton) {
 				throw new Error("Pass button not found on player display");
 			}
 
-			// Listen for card placement completing (after game session is updated)
-			const onCardPlaced = () => {
+			const onCardPlaced = (card: Card, targetRowType: CardContainer) => {
 				cleanup();
-				resolve("cardPlaced");
+
+				resolve({
+					player: this._player,
+					type: ActionType.PLACE_CARD,
+					card: card,
+					targetRow: targetRowType,
+				});
 			};
 
-			// Listen for pass button click
 			const onPassClicked = () => {
 				cleanup();
-				resolve("passed");
-			};
 
-			playerHand.once("cardPlacementComplete", onCardPlaced);
-			passButton.once("click", onPassClicked);
+				resolve({
+					player: this._player,
+					type: ActionType.PASS_TURN,
+				});
+			};
 
 			const cleanup = () => {
-				playerHand.off("cardPlacementComplete", onCardPlaced);
+				playerHand.off("playerCardPlacement", onCardPlaced);
 				passButton.off("click", onPassClicked);
 			};
+
+			playerHand.once("playerCardPlacement", onCardPlaced);
+			passButton.once("click", onPassClicked);
 		});
 	}
 }

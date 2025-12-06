@@ -1,43 +1,23 @@
-import { GameState, StateName } from "./GameState";
+import { State, StateName } from "./State";
 import { GameContext } from "../GameContext";
 
 /**
- * ResolutionState - Game over state
- * - Displays final game results
- * - Shows overall winner
- * - Provides option to restart (new game)
- * - Clears game data when restarting
- *
- * Transitions to: GameStartState (restart game) or stays here (exit)
+ * Game resolution state. Shows final scores, winner, and handles end-of-game logic.
  */
-export class ResolutionState extends GameState {
-  constructor(context: GameContext) {
-    super(context);
-  }
+export class ResolutionState extends State {
+	constructor(context: GameContext) {
+		super(context);
+	}
 
-  public async execute(): Promise<StateName> {
-    console.log("[ResolutionState] Game over - displaying final results");
+	public async execute(): Promise<StateName> {
+		// TODO: game ends, display final results
 
-    // Get game session
-    const gameSession = this.gameManager.getGameSession();
-    if (!gameSession) {
-      throw new Error("Game session not initialized");
-    }
+		console.log("Game ends, displaying final results...");
 
-    // TODO: Implement game over logic
-    // - Display final winner
-    // - Show game statistics
-    // - Provide "Play Again" button
-    // - Clear round scores when restarting
+		await this.delay(2);
 
-    console.log("[ResolutionState] Waiting for player input (restart/exit)");
+		this.gameManager.endGame();
 
-    // For now, just pause here
-    // In the future, this would wait for player input to restart
-    await new Promise(() => {}); // Never resolves until restart is implemented
-
-    // When "Play Again" is clicked, return GameStartState
-    // This starts a NEW GAME (new decks, new cards) without re-initializing the session
-    return StateName.GAME_START;
-  }
+		return StateName.ROUND_START;
+	}
 }

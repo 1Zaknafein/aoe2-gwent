@@ -1,47 +1,45 @@
-import { GameState, StateName } from "./GameState";
+import { State, StateName } from "./State";
 import { GameContext } from "../GameContext";
+import { PlayerID } from "../../types";
+import { GamePhase } from "../../../local-server";
 
 /**
  * RoundEndState - Handles end of round
  */
-export class RoundEndState extends GameState {
-  constructor(context: GameContext) {
-    super(context);
-  }
+export class RoundEndState extends State {
+	constructor(context: GameContext) {
+		super(context);
+	}
 
-  public async execute(): Promise<StateName> {
-    console.log(
-      `[RoundEndState] Round ${this.gameManager.getCurrentRound()} ended`
-    );
+	public async execute(): Promise<StateName> {
+		this.gameManager.handleRoundEnd();
 
-    const gameSession = this.gameManager.getGameSession();
+		const gameData = this.gameManager.gameData;
+		const round = gameData.roundNumber;
+		const roundWinnerId = gameData.roundWinner;
 
-    if (!gameSession) {
-      throw new Error("Game session not initialized");
-    }
+		let roundResultMessage: string;
 
-    // TODO: Implement round end logic
-    // - Display round results/scores
-    // - Show round winner
-    // - Animate cards moving to discard
-    // - Check round wins (best of 3)
+		if (roundWinnerId != null) {
+			const winner =
+				roundWinnerId === PlayerID.PLAYER ? "You win" : "Opponent wins";
+			roundResultMessage = `${winner} Round ${round}!`;
+		} else {
+			roundResultMessage = `Round ${round} ends in a tie!`;
+		}
 
-    // TODO: Check if any player has won 2 rounds (best of 3)
-    // const gameState = gameSession.getGameState();
-    // For now, assume game continues
-    const gameOver = false;
+		await this.messageDisplay.showMessage(roundResultMessage);
 
-    if (gameOver) {
-      console.log("[RoundEndState] Game over - transitioning to resolution");
-      return StateName.RESOLUTION;
-    }
+		return this.getNextStateName();
+	}
 
-    console.log("[RoundEndState] Preparing for next round");
+	private getNextStateName(): StateName {
+		const gameData = this.gameManager.gameData;
 
-    // TODO: Display between-round UI
-    // - Show current round wins
-    // - "Next Round" button or auto-continue after delay
+		if (gameData.phase === GamePhase.WAITING_FOR_ROUND_START) {
+			return StateName.ROUND_START;
+		}
 
-    return StateName.ROUND_START;
-  }
+		return StateName.RESOLUTION;
+	}
 }

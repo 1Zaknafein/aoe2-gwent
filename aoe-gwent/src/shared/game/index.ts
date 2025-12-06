@@ -1,8 +1,4 @@
-// Export local game controller
-export { LocalGameController } from "./LocalGameController";
-
-// Export state machine
 export { GameManager } from "./GameManager";
 export { GameStateMachine } from "./GameStateMachine";
-export { GameState, StateName } from "./states/GameState";
+export { State as GameState, StateName } from "./states/State";
 export * from "./states";

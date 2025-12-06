@@ -1,172 +1,62 @@
-import { LocalGameSession } from "./LocalGameSession";
 import { ActionType, PlayerAction } from "./GameTypes";
-import { CardDatabase } from "./CardDatabase";
-import { CardType } from "../shared/types/CardTypes";
-import { PlayerID } from "../shared/types";
+import { Player, PlayerData } from "../entities/player/Player";
+import { CardContainer } from "../entities/card";
 
 /**
  * AI opponent for local games
  */
-export class BotPlayer {
-	private botId: PlayerID;
-	private gameSession: LocalGameSession;
-	private thinkingDelay: number;
+export class BotPlayer extends Player {
+	private readonly thinkingDelay = 1000;
 
-	constructor(
-		botId: PlayerID,
-		gameSession: LocalGameSession,
-		thinkingDelay: number = 1000
-	) {
-		this.botId = botId;
-		this.gameSession = gameSession;
-		this.thinkingDelay = thinkingDelay;
+	private readonly _containerMap: Map<string, CardContainer> = new Map();
+	private readonly _otherPlayer: Player;
+
+	constructor(playerData: PlayerData, otherPlayer: Player) {
+		super(playerData);
+
+		this._otherPlayer = otherPlayer;
+
+		this._containerMap.set("melee", this.melee);
+		this._containerMap.set("ranged", this.ranged);
+		this._containerMap.set("siege", this.siege);
+		this._containerMap.set("hand", this.hand);
 	}
 
 	/**
-	 * Check if it's the bot's turn and make a move
+	 * Take turn as bot.
 	 */
-	public async takeTurn(): Promise<PlayerAction> {
-		const gameState = this.gameSession.getGameState();
-
-		// Check if it's bot's turn
-		if (gameState.currentTurn !== this.botId) {
-			throw new Error("Not bot's turn");
-		}
-
-		// Check if bot has already passed
-		if (gameState.passedPlayers.has(this.botId)) {
-			throw new Error("Bot has already passed");
-		}
-
-		// Wait a bit to simulate "thinking"
+	public async decideAction(): Promise<PlayerAction> {
 		await this.delay(this.thinkingDelay);
 
-		// Make a decision
-		const action = this.decideAction();
+		const cards = this.hand.cards;
+		const passChance = 0.2;
 
-		if (action) {
-			console.log(`Bot action:`, action);
-			this.gameSession.processAction(action);
+		let pass = false;
 
-			return action;
+		if (this.score > this._otherPlayer.score) {
+			pass = true;
+		} else if (Math.random() < passChance) {
+			pass = true;
+		} else if (cards.length === 0) {
+			pass = true;
 		}
 
-		throw new Error("Bot could not decide on an action");
-	}
-
-	/**
-	 * Decide what action to take
-	 */
-	private decideAction(): PlayerAction | null {
-		const hand = this.gameSession.getPlayerHand(this.botId);
-
-		if (!hand || hand.length === 0) {
-			// No cards left, must pass
+		if (pass) {
 			return {
 				type: ActionType.PASS_TURN,
-				playerId: this.botId,
+				player: this,
 			};
 		}
 
-		// Get current scores
-		const boards = this.gameSession.getBoardStates();
-		const playerBoard = boards.get(this.gameSession.getPlayerIds()[0]);
-		const botBoard = boards.get(this.botId);
-
-		if (!playerBoard || !botBoard) {
-			return null;
-		}
-
-		// Calculate current scores (simple sum)
-		const playerScore = this.calculateBoardScore(playerBoard);
-		const botScore = this.calculateBoardScore(botBoard);
-
-		// Simple strategy:
-		// 1. If bot is winning by 10+ points and has played at least 3 cards, pass
-		// 2. Otherwise, play a card
-
-		const botCardsPlayed =
-			botBoard.melee.length + botBoard.ranged.length + botBoard.siege.length;
-
-		if (botScore > playerScore + 10 && botCardsPlayed >= 3) {
-			return {
-				type: ActionType.PASS_TURN,
-				playerId: this.botId,
-			};
-		}
-
-		// Play a random card
-		return this.playRandomCard(hand);
-	}
-
-	/**
-	 * Play a random card from hand
-	 */
-	private playRandomCard(hand: number[]): PlayerAction | null {
-		if (hand.length === 0) {
-			return null;
-		}
-
-		// Pick a random card
-		const randomIndex = Math.floor(Math.random() * hand.length);
-		const cardId = hand[randomIndex];
-
-		// Get card data to determine which row to play it on
-		const cardData = CardDatabase.getCardById(cardId);
-
-		if (!cardData) {
-			console.error(`Bot: Card ${cardId} not found in database`);
-			return null;
-		}
-
-		// Determine target row based on card type
-		let targetRow: "melee" | "ranged" | "siege";
-		switch (cardData.type) {
-			case CardType.MELEE:
-				targetRow = "melee";
-				break;
-			case CardType.RANGED:
-				targetRow = "ranged";
-				break;
-			case CardType.SIEGE:
-				targetRow = "siege";
-				break;
-			default:
-				targetRow = "melee";
-		}
-
-		console.log(
-			`Bot playing card ${cardData.name} (${cardData.score}) on ${targetRow}`
-		);
+		const randomCard = cards[Math.floor(Math.random() * cards.length)];
+		const targetContainer = this._containerMap.get(randomCard.cardData.type);
 
 		return {
 			type: ActionType.PLACE_CARD,
-			playerId: this.botId,
-			cardId: cardId,
-			targetRow: targetRow,
+			player: this,
+			card: randomCard,
+			targetRow: targetContainer,
 		};
-	}
-
-	/**
-	 * Calculate simple board score
-	 */
-	private calculateBoardScore(board: {
-		melee: number[];
-		ranged: number[];
-		siege: number[];
-	}): number {
-		let total = 0;
-
-		for (const row of [board.melee, board.ranged, board.siege]) {
-			for (const cardId of row) {
-				const cardData = CardDatabase.getCardById(cardId);
-				if (cardData) {
-					total += cardData.score;
-				}
-			}
-		}
-
-		return total;
 	}
 
 	/**
@@ -174,12 +64,5 @@ export class BotPlayer {
 	 */
 	private delay(ms: number): Promise<void> {
 		return new Promise((resolve) => setTimeout(resolve, ms));
-	}
-
-	/**
-	 * Set thinking delay
-	 */
-	public setThinkingDelay(ms: number): void {
-		this.thinkingDelay = ms;
 	}
 }

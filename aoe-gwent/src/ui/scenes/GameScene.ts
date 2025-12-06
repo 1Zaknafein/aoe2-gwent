@@ -1,12 +1,9 @@
-import { Text, TextStyle } from "pixi.js";
-import { PixiContainer, PixiGraphics } from "../../plugins/engine";
+import { PixiContainer } from "../../plugins/engine";
 import { Manager, SceneInterface } from "../../entities/manager";
 import {
 	PlayingRowContainer,
 	HandContainer,
 	CardContainer,
-	CardContainerLayoutType,
-	CardContainerManager,
 } from "../../entities/card";
 import { CardType } from "../../shared/types/CardTypes";
 import { Deck } from "../../entities/deck";
@@ -14,49 +11,45 @@ import {
 	PlayerDisplayManager,
 	PlayerDisplayManagerConfig,
 } from "../../entities/player";
-import { GameBoardInteractionManager } from "./GameBoardInteractionManager";
-import { MessageDisplay } from "../components/MessageDisplay";
+import { GameSceneBuildHelper } from "./GameSceneBuildHelper";
+import { WeatherRowContainer } from "../../entities/card/WeatherRowContainer";
+import { Container, Graphics } from "pixi.js";
 
 /**
  * Game scene containing all board elements.
  * Mimics Gwent-style board with 3 rows per player (Melee, Ranged, Siege)
  */
 export class GameScene extends PixiContainer implements SceneInterface {
-	private _opponentMeleeRow!: PlayingRowContainer;
-	private _opponentRangedRow!: PlayingRowContainer;
-	private _opponentSiegeRow!: PlayingRowContainer;
+	public readonly opponentMeleeRow: PlayingRowContainer;
+	public readonly opponentRangedRow: PlayingRowContainer;
+	public readonly opponentSiegeRow: PlayingRowContainer;
 
-	private playerMeleeRow!: PlayingRowContainer;
-	private playerRangedRow!: PlayingRowContainer;
-	private playerSiegeRow!: PlayingRowContainer;
+	public readonly playerMeleeRow: PlayingRowContainer;
+	public readonly playerRangedRow: PlayingRowContainer;
+	public readonly playerSiegeRow: PlayingRowContainer;
 
-	private playerHand!: HandContainer;
-	private opponentHand!: HandContainer;
+	public readonly playerHand: HandContainer;
+	public readonly opponentHand: HandContainer;
 
-	private weatherRow!: CardContainer;
+	public readonly weatherRow: CardContainer;
 
-	private playerDiscard!: CardContainer;
-	private opponentDiscard!: CardContainer;
+	public readonly playerDiscard: CardContainer;
+	public readonly opponentDiscard: CardContainer;
+
+	public readonly gameBoard: Container;
+	public readonly background: Graphics;
+
+	public readonly boardWidth = 2400;
+	public readonly boardHeight = 1350;
+
+	private readonly ROW_HEIGHT = 130;
+	private readonly LEFT_MARGIN = 450;
+	private readonly RIGHT_MARGIN = 350;
 
 	private playerDeck!: Deck;
 	private opponentDeck!: Deck;
 
-	// Main game board container
-	private gameBoard!: PixiContainer;
-	private background!: PixiGraphics;
-
-	private interactionManager!: GameBoardInteractionManager;
 	private playerDisplayManager!: PlayerDisplayManager;
-	public cardContainers!: CardContainerManager;
-	private messageDisplay!: MessageDisplay;
-
-	// Layout constants
-	private readonly BOARD_WIDTH = 2400;
-	private readonly BOARD_HEIGHT = 1350;
-	private readonly ROW_HEIGHT = 130;
-	private readonly HAND_HEIGHT = 180;
-	private readonly LEFT_MARGIN = 450; // Space for player displays and weather
-	private readonly RIGHT_MARGIN = 350; // Space for deck/discard
 
 	constructor() {
 		super();
@@ -67,177 +60,78 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.gameBoard.label = "game_board";
 		this.addChild(this.gameBoard);
 
-		this.createBackground();
-		this.createBoard();
-		this.createWeatherRow();
-		this.createDiscardPiles();
-		this.createDecks();
-		this.createHands();
-		this.createPlayerDisplaySystem();
-		this.createMessageDisplay();
-
-		this.interactionManager = new GameBoardInteractionManager(
-			this.playerHand,
-			this.playerMeleeRow,
-			this.playerRangedRow,
-			this.playerSiegeRow
-		);
-
-		this.interactionManager.setupPlayerHandInteractions();
-		this.interactionManager.setupRowInteractions();
-
-		this.on("pointerup", () => this.interactionManager.handleGlobalClick());
-
-		this.cardContainers = new CardContainerManager();
-
-		this.resize(Manager.width, Manager.height);
-	}
-
-	private createBackground(): void {
-		this.background = new PixiGraphics();
-
-		this.background.rect(0, 0, 10000, 10000);
+		this.background = new Graphics();
+		this.background.rect(0, 0, 1, 1);
 		this.background.fill({ color: 0x1a1410 });
 
-		this.gameBoard.addChild(this.background);
-	}
+		const centerX = this.boardWidth / 2;
+		const rowWidth = this.boardWidth - this.LEFT_MARGIN - this.RIGHT_MARGIN;
 
-	private createBoard(): void {
-		const centerX = this.BOARD_WIDTH / 2;
-		const playAreaWidth =
-			this.BOARD_WIDTH - this.LEFT_MARGIN - this.RIGHT_MARGIN;
+		const helper = new GameSceneBuildHelper(130, rowWidth);
 
-		this._opponentSiegeRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Opponent Siege",
-			labelColor: 0xff6b6b,
-			containerType: CardType.SIEGE,
-		});
-		this._opponentSiegeRow.position.set(centerX, 280);
-		this.gameBoard.addChild(this._opponentSiegeRow);
+		this.opponentSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
+		this.opponentSiegeRow.position.set(centerX, 280);
 
-		this._opponentRangedRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Opponent Ranged",
-			labelColor: 0xff6b6b,
-			containerType: CardType.RANGED,
-		});
-		this._opponentRangedRow.position.set(centerX, 420);
-		this.gameBoard.addChild(this._opponentRangedRow);
+		this.opponentRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
+		this.opponentRangedRow.position.set(centerX, 420);
 
-		this._opponentMeleeRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Opponent Melee",
-			labelColor: 0xff6b6b,
-			containerType: CardType.MELEE,
-		});
-		this._opponentMeleeRow.position.set(centerX, 560);
-		this.gameBoard.addChild(this._opponentMeleeRow);
+		this.opponentMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
+		this.opponentMeleeRow.position.set(centerX, 560);
 
 		const opponentMeleeY = 560;
 		const playerMeleeY = 790;
+
 		const dividerY = (opponentMeleeY + playerMeleeY) / 2;
-		this.createDividerWithFade(centerX, dividerY, playAreaWidth);
+		const divider = helper.createDivider(centerX, dividerY, centerX);
 
-		this.playerMeleeRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Your Melee",
-			labelColor: 0x66cc66,
-			containerType: CardType.MELEE,
-		});
+		this.playerMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
 		this.playerMeleeRow.position.set(centerX, 790);
-		this.gameBoard.addChild(this.playerMeleeRow);
 
-		this.playerRangedRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Your Ranged",
-			labelColor: 0x66cc66,
-			containerType: CardType.RANGED,
-		});
+		this.playerRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
 		this.playerRangedRow.position.set(centerX, 930);
-		this.gameBoard.addChild(this.playerRangedRow);
 
-		this.playerSiegeRow = new PlayingRowContainer({
-			width: playAreaWidth,
-			height: this.ROW_HEIGHT,
-			labelText: "Your Siege",
-			labelColor: 0x66cc66,
-			containerType: CardType.SIEGE,
-		});
+		this.playerSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
 		this.playerSiegeRow.position.set(centerX, 1070);
-		this.gameBoard.addChild(this.playerSiegeRow);
-	}
 
-	private createDividerWithFade(
-		centerX: number,
-		y: number,
-		width: number
-	): void {
-		const divider = new PixiGraphics();
-		const fadeWidth = 150;
-		const lineStart = centerX - width / 2;
-		const lineEnd = centerX + width / 2;
+		this.opponentHand = helper.createHandContainer(false);
+		this.opponentHand.position.set(centerX, 110);
 
-		// Main solid line in the center
-		divider.moveTo(lineStart + fadeWidth, y);
-		divider.lineTo(lineEnd - fadeWidth, y);
-		divider.stroke({ color: 0xffd700, width: 3, alpha: 1.0 });
+		this.playerHand = helper.createHandContainer(true);
+		this.playerHand.position.set(centerX, 1240);
 
-		// Left fade - draw segments with increasing alpha
-		for (let i = 0; i < fadeWidth; i += 5) {
-			const alpha = i / fadeWidth;
-			divider.moveTo(lineStart + i, y);
-			divider.lineTo(lineStart + i + 5, y);
-			divider.stroke({ color: 0xffd700, width: 3, alpha: alpha });
-		}
-
-		// Right fade - draw segments with decreasing alpha
-		for (let i = 0; i < fadeWidth; i += 5) {
-			const alpha = i / fadeWidth;
-			divider.moveTo(lineEnd - i - 5, y);
-			divider.lineTo(lineEnd - i, y);
-			divider.stroke({ color: 0xffd700, width: 3, alpha: alpha });
-		}
-
-		this.gameBoard.addChild(divider);
-	}
-
-	private createHands(): void {
-		const centerX = this.BOARD_WIDTH / 2;
-		const handWidth = this.BOARD_WIDTH - this.LEFT_MARGIN - this.RIGHT_MARGIN;
-
-		const opponentHandY = 110;
-		this.opponentHand = new HandContainer({
-			width: handWidth,
-			height: this.HAND_HEIGHT,
-			labelText: "Opponent Hand",
-			labelColor: 0xd4af37,
-			backgroundColor: 0x2a2013,
-			borderColor: 0x8b6914,
-			isInteractive: false,
+		this.weatherRow = new WeatherRowContainer({
+			containerType: CardType.WEATHER,
+			width: 350,
+			height: this.ROW_HEIGHT,
 		});
-		this.opponentHand.position.set(centerX, opponentHandY);
-		this.opponentHand.scale.set(1.0);
-		this.gameBoard.addChild(this.opponentHand);
+		this.weatherRow.position.set(200, this.boardHeight / 2);
 
-		const playerHandY = 1240;
-		this.playerHand = new HandContainer({
-			width: handWidth,
-			height: this.HAND_HEIGHT,
-			labelText: "Your Hand",
-			labelColor: 0xd4af37,
-			backgroundColor: 0x2a2013,
-			borderColor: 0x8b6914,
-			isInteractive: true,
-		});
-		this.playerHand.position.set(centerX, playerHandY);
-		this.playerHand.scale.set(1.0);
-		this.gameBoard.addChild(this.playerHand);
+		this.playerDiscard = helper.createDiscardPile();
+		this.playerDiscard.position.set(2100, 1242);
+
+		this.opponentDiscard = helper.createDiscardPile();
+		this.opponentDiscard.position.set(2100, 108);
+
+		this.gameBoard.addChild(
+			this.background,
+			divider,
+			this.opponentSiegeRow,
+			this.opponentRangedRow,
+			this.opponentMeleeRow,
+			this.playerMeleeRow,
+			this.playerRangedRow,
+			this.playerSiegeRow,
+			this.weatherRow,
+			this.playerDiscard,
+			this.opponentDiscard,
+			this.opponentHand,
+			this.playerHand
+		);
+
+		this.createDecks();
+		this.createPlayerDisplaySystem();
+
+		this.resize(Manager.width, Manager.height);
 	}
 
 	private createPlayerDisplaySystem(): void {
@@ -257,9 +151,9 @@ export class GameScene extends PixiContainer implements SceneInterface {
 			this.playerSiegeRow,
 		];
 		const opponentContainers = [
-			this._opponentMeleeRow,
-			this._opponentRangedRow,
-			this._opponentSiegeRow,
+			this.opponentMeleeRow,
+			this.opponentRangedRow,
+			this.opponentSiegeRow,
 		];
 
 		this.playerDisplayManager.setupScoreTracking(
@@ -293,111 +187,14 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		}
 	}
 
-	private createWeatherRow(): void {
-		const weatherX = 200;
-		const weatherY = this.BOARD_HEIGHT / 2;
-		const weatherWidth = 350;
-		const weatherHeight = this.ROW_HEIGHT;
-
-		this.weatherRow = new CardContainer(
-			weatherWidth - 40, // Subtract padding for card area
-			"weather",
-			undefined,
-			CardContainerLayoutType.STACK
-		);
-
-		// Create visual background for weather row
-		const weatherBg = new PixiGraphics();
-		const bgX = -weatherWidth / 2;
-		const bgY = -weatherHeight / 2;
-
-		weatherBg.rect(bgX, bgY, weatherWidth, weatherHeight);
-		weatherBg.fill({ color: 0x2a2013, alpha: 0.3 });
-
-		// Border
-		weatherBg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });
-		weatherBg.rect(bgX + 3, bgY + 3, weatherWidth - 6, weatherHeight - 6);
-		weatherBg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
-
-		// Add label
-		const labelStyle = new TextStyle({
-			fontFamily: "Cinzel, serif",
-			fontSize: 12,
-			fill: 0xd4af37,
-			fontWeight: "bold",
-		});
-		const label = new Text({ text: "WEATHER", style: labelStyle });
-		label.position.set(bgX + 10, 0);
-		label.anchor.set(0, 0.5);
-		label.alpha = 0.7;
-
-		this.weatherRow.addChildAt(weatherBg, 0);
-		this.weatherRow.addChild(label);
-
-		this.weatherRow.position.set(weatherX, weatherY);
-		this.weatherRow.scale.set(1.0);
-		this.weatherRow.setCardsInteractive(false);
-
-		this.gameBoard.addChild(this.weatherRow);
-	}
-
-	private createDiscardPiles(): void {
-		const discardWidth = 130;
-		const discardHeight = 175;
-
-		this.playerDiscard = new CardContainer(
-			discardWidth,
-			"player_discard",
-			undefined,
-			CardContainerLayoutType.STACK
-		);
-
-		const playerDiscardBg = this.createDiscardBackground(
-			discardWidth,
-			discardHeight
-		);
-		this.playerDiscard.addChildAt(playerDiscardBg, 0);
-		this.playerDiscard.position.set(2100, 1242);
-		this.playerDiscard.setCardsInteractive(false);
-		this.gameBoard.addChild(this.playerDiscard);
-
-		this.opponentDiscard = new CardContainer(
-			discardWidth,
-			"opponent_discard",
-			undefined,
-			CardContainerLayoutType.STACK
-		);
-
-		const opponentDiscardBg = this.createDiscardBackground(
-			discardWidth,
-			discardHeight
-		);
-		this.opponentDiscard.addChildAt(opponentDiscardBg, 0);
-		this.opponentDiscard.position.set(2100, 108);
-		this.opponentDiscard.setCardsInteractive(false);
-		this.gameBoard.addChild(this.opponentDiscard);
-	}
-
-	private createDiscardBackground(width: number, height: number): PixiGraphics {
-		const bg = new PixiGraphics();
-		const bgX = -width / 2;
-		const bgY = -height / 2;
-
-		bg.rect(bgX, bgY, width, height);
-		bg.fill({ color: 0x2a2013, alpha: 0.3 });
-
-		bg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });
-		bg.rect(bgX + 3, bgY + 3, width - 6, height - 6);
-		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
-
-		return bg;
-	}
-
+	/**
+	 * Visual decks on the board, used as targets to animate cards from.
+	 */
 	private createDecks(): void {
-		const boardWidth = this.BOARD_WIDTH;
+		const boardWidth = this.boardWidth;
 
 		this.playerDeck = new Deck();
-		this.playerDeck.setPosition(boardWidth - 125, this.BOARD_HEIGHT - 105);
+		this.playerDeck.setPosition(boardWidth - 125, this.boardHeight - 105);
 		this.playerDeck.scale.set(0.75);
 		this.gameBoard.addChild(this.playerDeck);
 
@@ -407,31 +204,19 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.gameBoard.addChild(this.opponentDeck);
 	}
 
-	private createMessageDisplay(): void {
-		this.messageDisplay = new MessageDisplay();
-		this.messageDisplay.position.set(
-			this.BOARD_WIDTH / 2,
-			this.BOARD_HEIGHT / 2
-		);
-		this.gameBoard.addChild(this.messageDisplay);
-	}
-
 	resize(screenWidth: number, screenHeight: number): void {
-		const scaleX = screenWidth / this.BOARD_WIDTH;
-		const scaleY = screenHeight / this.BOARD_HEIGHT;
+		const scaleX = screenWidth / this.boardWidth;
+		const scaleY = screenHeight / this.boardHeight;
 		const scale = Math.min(scaleX, scaleY);
 
-		const offsetX = (screenWidth - this.BOARD_WIDTH * scale) / 2;
-		const offsetY = (screenHeight - this.BOARD_HEIGHT * scale) / 2;
+		const offsetX = (screenWidth - this.boardWidth * scale) / 2;
+		const offsetY = (screenHeight - this.boardHeight * scale) / 2;
 
-		this.background.clear();
-		this.background.rect(
-			-offsetX / scale,
-			-offsetY / scale,
-			screenWidth / scale,
-			screenHeight / scale
-		);
-		this.background.fill({ color: 0x1a1410 });
+		this.background.width = screenWidth / scale;
+		this.background.height = screenHeight / scale;
+
+		this.background.x = -offsetX / scale;
+		this.background.y = -offsetY / scale;
 
 		this.gameBoard.scale.set(scale);
 
@@ -440,49 +225,9 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	}
 
 	/**
-	 * Get the MessageDisplay instance for use in game states
-	 */
-	public getMessageDisplay(): MessageDisplay {
-		if (!this.messageDisplay) {
-			throw new Error("MessageDisplay not initialized");
-		}
-		return this.messageDisplay;
-	}
-
-	/**
-	 * Get player hand container
-	 */
-	public getPlayerHand(): HandContainer {
-		return this.playerHand;
-	}
-
-	/**
-	 * Get opponent hand container
-	 */
-	public getOpponentHand(): HandContainer {
-		return this.opponentHand;
-	}
-
-	/**
 	 * Get player display manager
 	 */
 	public getPlayerDisplayManager(): PlayerDisplayManager {
 		return this.playerDisplayManager;
-	}
-
-	public getInteractionManager(): GameBoardInteractionManager {
-		return this.interactionManager;
-	}
-
-	public getOpponentMeleeRow(): PlayingRowContainer {
-		return this._opponentMeleeRow;
-	}
-
-	public getOpponentRangedRow(): PlayingRowContainer {
-		return this._opponentRangedRow;
-	}
-
-	public getOpponentSiegeRow(): PlayingRowContainer {
-		return this._opponentSiegeRow;
 	}
 }

@@ -3,9 +3,7 @@ export { GameStateMachine } from "../GameStateMachine";
 export { GameManager } from "../GameManager";
 
 // State exports
-export { GameState, StateName } from "./GameState";
-export { SetupState } from "./SetupState";
-export { GameStartState } from "./GameStartState";
+export { State as GameState, StateName } from "./State";
 export { RoundStartState } from "./RoundStartState";
 export { PlayerActionState } from "./PlayerActionState";
 export { EnemyActionState } from "./EnemyActionState";
