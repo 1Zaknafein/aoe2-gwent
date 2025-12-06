@@ -109,7 +109,7 @@ export class PlayingRowContainer extends CardContainer {
 
 		// Main background
 		bg.rect(bgX, bgY, width, height);
-		bg.fill({ color: 0x654321, alpha: 0.2 });
+		bg.fill({ color: 0x654321, alpha: 0.3 });
 
 		// Decorative double border
 		bg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });

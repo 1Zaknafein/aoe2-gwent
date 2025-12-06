@@ -13,7 +13,7 @@ import {
 } from "../../entities/player";
 import { GameSceneBuildHelper } from "./GameSceneBuildHelper";
 import { WeatherRowContainer } from "../../entities/card/WeatherRowContainer";
-import { Container, Graphics } from "pixi.js";
+import { Assets, Container, FillGradient, Graphics, Sprite } from "pixi.js";
 
 /**
  * Game scene containing all board elements.
@@ -37,6 +37,11 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	public readonly opponentDiscard: CardContainer;
 
 	public readonly gameBoard: Container;
+	public readonly backgroundImage: Sprite;
+	public readonly bgTopGradient: Graphics;
+	public readonly bgBottomGradient: Graphics;
+	public readonly bgLeftGradient: Graphics;
+	public readonly bgRightGradient: Graphics;
 	public readonly background: Graphics;
 
 	public readonly boardWidth = 2400;
@@ -62,7 +67,16 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this.background = new Graphics();
 		this.background.rect(0, 0, 1, 1);
-		this.background.fill({ color: 0x1a1410 });
+		this.background.fill({ color: "#1a1410" });
+
+		this.backgroundImage = Sprite.from(Assets.get("game_background"));
+		this.backgroundImage.alpha = 0.1;
+
+		// Gradients to cover the edges of the background image
+		this.bgTopGradient = this.createEdgeGradient("vertical", false);
+		this.bgBottomGradient = this.createEdgeGradient("vertical", true);
+		this.bgLeftGradient = this.createEdgeGradient("horizontal", false);
+		this.bgRightGradient = this.createEdgeGradient("horizontal", true);
 
 		const centerX = this.boardWidth / 2;
 		const rowWidth = this.boardWidth - this.LEFT_MARGIN - this.RIGHT_MARGIN;
@@ -114,6 +128,11 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this.gameBoard.addChild(
 			this.background,
+			this.backgroundImage,
+			this.bgTopGradient,
+			this.bgBottomGradient,
+			this.bgLeftGradient,
+			this.bgRightGradient,
 			divider,
 			this.opponentSiegeRow,
 			this.opponentRangedRow,
@@ -129,9 +148,40 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		);
 
 		this.createDecks();
+
+		// TODO Move this to main.ts or at least separate class
 		this.createPlayerDisplaySystem();
 
 		this.resize(Manager.width, Manager.height);
+	}
+
+	private createEdgeGradient(
+		direction: "vertical" | "horizontal",
+		reversed: boolean
+	): Graphics {
+		const size = 100;
+		const gradient =
+			direction === "vertical"
+				? new FillGradient(0, 0, 1, size)
+				: new FillGradient(0, 0, size, 1);
+
+		const solidColor = "#1a1410";
+		const transparentColor = "#1a141000";
+
+		if (reversed) {
+			gradient.addColorStop(0, transparentColor);
+			gradient.addColorStop(1, solidColor);
+		} else {
+			gradient.addColorStop(0, solidColor);
+			gradient.addColorStop(1, transparentColor);
+		}
+
+		const graphics = new Graphics();
+		const width = direction === "vertical" ? 1 : size;
+		const height = direction === "vertical" ? size : 1;
+		graphics.rect(0, 0, width, height).fill(gradient);
+
+		return graphics;
 	}
 
 	private createPlayerDisplaySystem(): void {
@@ -217,6 +267,25 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this.background.x = -offsetX / scale;
 		this.background.y = -offsetY / scale;
+
+		this.backgroundImage.width = this.boardWidth;
+		this.backgroundImage.height = this.boardHeight;
+
+		this.bgTopGradient.width = this.boardWidth;
+		this.bgTopGradient.height = 100;
+		this.bgTopGradient.position.set(0, 0);
+
+		this.bgBottomGradient.width = this.boardWidth;
+		this.bgBottomGradient.height = 100;
+		this.bgBottomGradient.position.set(0, this.boardHeight - 100);
+
+		this.bgLeftGradient.width = 100;
+		this.bgLeftGradient.height = this.boardHeight;
+		this.bgLeftGradient.position.set(0, 0);
+
+		this.bgRightGradient.width = 100;
+		this.bgRightGradient.height = this.boardHeight;
+		this.bgRightGradient.position.set(this.boardWidth - 100, 0);
 
 		this.gameBoard.scale.set(scale);
 

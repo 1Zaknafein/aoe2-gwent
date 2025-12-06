@@ -43,6 +43,7 @@ export class GameManager {
 
 		this._player.hand.addCardsBatch(this._player.deck.splice(0, 10));
 		this._enemy.hand.addCardsBatch(this._enemy.deck.splice(0, 10));
+		this._enemy.hand.hideCards();
 	}
 
 	/**

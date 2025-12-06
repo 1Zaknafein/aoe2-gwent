@@ -39,6 +39,15 @@ export class HandContainer extends CardContainer {
 		this.setCardsInteractive(config.isInteractive ?? true);
 	}
 
+	/**
+	 * Hide all cards, so only card backs are visible.
+	 */
+	public hideCards(): void {
+		this.cards.forEach((card) => {
+			card.showBack();
+		});
+	}
+
 	private createBackground(): PixiGraphics {
 		const bg = new PixiGraphics();
 		const { width, height } = this.config;
@@ -57,12 +66,5 @@ export class HandContainer extends CardContainer {
 		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.6 });
 
 		return bg;
-	}
-
-	/**
-	 * Get the card count for display purposes
-	 */
-	public getCardCount(): number {
-		return this.cardCount;
 	}
 }

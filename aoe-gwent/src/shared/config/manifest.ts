@@ -6,7 +6,7 @@ export const options: LoaderOptions = {
 			{
 				name: "sprites",
 				assets: {
-					background: "./sprites/background.webp",
+					game_background: "./sprites/game_background.webp",
 					loader: "./sprites/loader.png",
 				},
 			},

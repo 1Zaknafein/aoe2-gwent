@@ -401,6 +401,10 @@ export class CardContainer extends PixiContainer {
 		// Remove card from source container's array but keep it as a child during animation
 		this._cards.splice(cardIndex, 1);
 
+		if (cardToTransfer.showingBack) {
+			cardToTransfer.showFront();
+		}
+
 		// Disable card interactivity during animation to prevent hover effects
 		cardToTransfer.eventMode = "none";
 		cardToTransfer.cursor = "default";
