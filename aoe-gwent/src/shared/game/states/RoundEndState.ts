@@ -30,6 +30,8 @@ export class RoundEndState extends State {
 
 		await this.messageDisplay.showMessage(roundResultMessage);
 
+		await this.delay(1);
+
 		return this.getNextStateName();
 	}
 

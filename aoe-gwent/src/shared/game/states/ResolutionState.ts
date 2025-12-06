@@ -14,9 +14,11 @@ export class ResolutionState extends State {
 
 		console.log("Game ends, displaying final results...");
 
-		await this.delay(2);
+		await this.delay(1);
 
 		this.gameManager.endGame();
+
+		await this.delay(1);
 
 		return StateName.ROUND_START;
 	}
