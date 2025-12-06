@@ -6,7 +6,7 @@ import { CardContainer } from "../entities/card";
  * AI opponent for local games
  */
 export class BotPlayer extends Player {
-	private readonly thinkingDelay = 1000;
+	private readonly thinkingDelay = 200;
 
 	private readonly _containerMap: Map<string, CardContainer> = new Map();
 	private readonly _otherPlayer: Player;
