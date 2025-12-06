@@ -22,7 +22,7 @@ export class EnemyActionState extends State {
 	public async execute(): Promise<StateName> {
 		// Show message only on first entry
 		if (this._isFirstEntry) {
-			await this.messageDisplay.showMessage("Opponents turn!");
+			await this.messageDisplay.showMessage("Opponent's turn!");
 			this._isFirstEntry = false;
 		}
 
@@ -31,7 +31,7 @@ export class EnemyActionState extends State {
 		await this._gameManager.handleAction(action);
 
 		if (action.type === ActionType.PASS_TURN) {
-			await this.messageDisplay.showMessage("Opponent has passed.");
+			await this.messageDisplay.showMessage("Opponent has passed");
 		}
 
 		const gameData = this._gameManager.gameData;

@@ -1,5 +1,6 @@
 import { State, StateName } from "./State";
 import { GameContext } from "../GameContext";
+import { PlayerID } from "../../types";
 
 /**
  * Game resolution state. Shows final scores, winner, and handles end-of-game logic.
@@ -10,15 +11,21 @@ export class ResolutionState extends State {
 	}
 
 	public async execute(): Promise<StateName> {
-		// TODO: game ends, display final results
+		await this.delay(0.5);
 
-		console.log("Game ends, displaying final results...");
+		const winner = this.gameManager.gameData.gameWinner;
 
-		await this.delay(1);
+		if (winner === null) {
+			this.messageDisplay.showMessage("The game ends in a tie!");
+		} else if (winner === PlayerID.PLAYER) {
+			await this.messageDisplay.showMessage("You won!");
+		} else {
+			await this.messageDisplay.showMessage("You lost!");
+		}
 
 		this.gameManager.endGame();
 
-		await this.delay(1);
+		await this.delay(2);
 
 		return StateName.ROUND_START;
 	}

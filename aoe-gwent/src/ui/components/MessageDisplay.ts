@@ -1,6 +1,6 @@
 import { PixiContainer, PixiGraphics, PixiText } from "../../plugins/engine";
 import { gsap } from "gsap";
-import { FillGradient } from "pixi.js";
+import { FillGradient, Graphics } from "pixi.js";
 
 export interface MessageDisplayOptions {
 	width?: number;
@@ -103,8 +103,8 @@ export class MessageDisplay extends PixiContainer {
 		gradient.addColorStop(0.9, backgroundColor);
 		gradient.addColorStop(1, fadeColor);
 
-		this._background = new PixiGraphics();
-		this._background.alpha = 0.8;
+		this._background = new Graphics();
+		this._background.alpha = 1;
 		this._background.rect(0, 0, width, height).fill(gradient);
 
 		this.addChild(this._background);

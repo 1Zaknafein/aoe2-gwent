@@ -25,6 +25,7 @@ export interface GameData {
 	currentTurn: PlayerID;
 	roundNumber: number;
 	roundWinner: PlayerID | null;
+	gameWinner: PlayerID | null;
 }
 
 export interface PlayerAction {

@@ -27,6 +27,7 @@ export class GameManager {
 			roundNumber: 0,
 			currentTurn: this._player.id,
 			roundWinner: null,
+			gameWinner: null,
 		};
 	}
 
@@ -95,6 +96,9 @@ export class GameManager {
 
 		if (playerScore >= 2 || enemyScore >= 2) {
 			this.gameData.phase = GamePhase.GAME_END;
+			this.gameData.gameWinner =
+				playerScore >= 2 ? this._player.id : this._enemy.id;
+
 			return;
 		}
 
