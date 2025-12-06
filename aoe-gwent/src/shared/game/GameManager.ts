@@ -91,6 +91,8 @@ export class GameManager {
 
 		this.gameData.roundWinner = roundWinner;
 
+		this.removeCardsFromBoard();
+
 		if (playerScore >= 2 || enemyScore >= 2) {
 			this.gameData.phase = GamePhase.GAME_END;
 			return;
@@ -169,5 +171,16 @@ export class GameManager {
 		if (this._player.hasPassed && this._enemy.hasPassed) {
 			this.gameData.phase = GamePhase.ROUND_END;
 		}
+	}
+
+	private removeCardsFromBoard(): void {
+		this._player.melee.transferAllCardsTo(this._player.discarded);
+		this._enemy.melee.transferAllCardsTo(this._enemy.discarded);
+
+		this._player.ranged.transferAllCardsTo(this._player.discarded);
+		this._enemy.ranged.transferAllCardsTo(this._enemy.discarded);
+
+		this._player.siege.transferAllCardsTo(this._player.discarded);
+		this._enemy.siege.transferAllCardsTo(this._enemy.discarded);
 	}
 }

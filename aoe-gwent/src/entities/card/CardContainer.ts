@@ -26,7 +26,7 @@ export class CardContainer extends PixiContainer {
 	 * @param label Label for the container.
 	 * @param containerType Optional type restriction for this container
 	 * @param layoutType Optional layout type for card positioning behavior
-	 * @param cardScale Optional scale for cards in this container (default: 1.0)
+	 * @param cardScale Optional scale for cards in this container (default: 1)
 	 */
 	constructor(
 		maxWidth: number,
@@ -487,99 +487,24 @@ export class CardContainer extends PixiContainer {
 	}
 
 	/**
-	 * Transfer all cards from this container to a target container with batch animation
+	 * Transfer all cards from this container to a target container with staggered animations
 	 */
 	public async transferAllCardsTo(
 		targetContainer: CardContainer
 	): Promise<void> {
 		if (this._cards.length === 0) return;
 
-		const cardsToTransfer = [...this._cards];
-		const sourceScale = this.scale.x;
-		const targetScale = targetContainer.scale.x;
-		const baseCardScale = 1;
-
-		const targetVisualScale = (baseCardScale * targetScale) / sourceScale;
-
-		const targetPosition = targetContainer.toGlobal({ x: 0, y: 0 });
-		const targetLocalInSource = this.toLocal(targetPosition);
-
-		this._cards = [];
-
-		cardsToTransfer.forEach((card) => {
-			this.emit("cardRemoved", { card, container: this });
-		});
-
-		const animationPromises = cardsToTransfer.map((card, index) => {
+		// Transfer each card with a small delay for staggered effect
+		const transferPromises = this._cards.map((card, index) => {
 			return new Promise<void>((resolve) => {
-				card.eventMode = "none";
-				card.cursor = "default";
-
-				const delay = index * 0.05; // 50ms stagger between cards
-				const duration = 0.6;
-
-				const positionTween = gsap.to(card, {
-					x: targetLocalInSource.x,
-					y: targetLocalInSource.y,
-					duration: duration,
-					delay: delay,
-					ease: "power2.inOut",
-				});
-
-				const scaleTween = gsap.to(card.scale, {
-					x: targetVisualScale,
-					y: targetVisualScale,
-					duration: duration,
-					delay: delay,
-					ease: "power2.inOut",
-					onComplete: () => {
-						// Remove from source container
-						this.removeChild(card);
-
-						// Add to target container
-						targetContainer._cards.push(card);
-						targetContainer.addChild(card);
-
-						// Reset card properties for target container
-						card.x = 0;
-						card.y = 0;
-						card.scale.set(baseCardScale);
-
-						// Re-enable interactivity based on target container settings
-						card.eventMode = targetContainer._areCardsInteractive
-							? "static"
-							: "none";
-						card.cursor = targetContainer._areCardsInteractive
-							? "pointer"
-							: "default";
-
-						targetContainer.emit("cardAdded", {
-							card,
-							container: targetContainer,
-						});
-
-						// Remove the animations from both containers' active transfers
-						this._activeTransfers.delete(positionTween);
-						this._activeTransfers.delete(scaleTween);
-						targetContainer._activeTransfers.delete(positionTween);
-						targetContainer._activeTransfers.delete(scaleTween);
-
-						resolve();
-					},
-				});
-
-				// Track active transfers
-				this._activeTransfers.add(positionTween);
-				this._activeTransfers.add(scaleTween);
-				targetContainer._activeTransfers.add(positionTween);
-				targetContainer._activeTransfers.add(scaleTween);
+				setTimeout(async () => {
+					await this.transferCardTo(card, targetContainer);
+					resolve();
+				}, index * 50);
 			});
 		});
 
-		await Promise.all(animationPromises);
-
-		this.updateCardPositions();
-		targetContainer.updateCardPositions();
+		await Promise.all(transferPromises);
 	}
 
 	/**

@@ -1,6 +1,8 @@
 import { Graphics } from "pixi.js";
 import {
+	Card,
 	CardContainer,
+	CardContainerLayoutType,
 	CardType,
 	HandContainer,
 	PlayingRowContainer,
@@ -89,7 +91,12 @@ export class GameSceneBuildHelper {
 		bg.rect(bgX + 3, bgY + 3, width - 6, height - 6);
 		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
 
-		const discardPile = new CardContainer(width);
+		const discardPile = new CardContainer(
+			width,
+			undefined,
+			CardContainerLayoutType.STACK,
+			0.6
+		);
 		discardPile.addChild(bg);
 		discardPile.setCardsInteractive(false);
 
