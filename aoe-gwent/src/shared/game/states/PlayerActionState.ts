@@ -63,6 +63,8 @@ export class PlayerActionState extends State {
 
 		await this._gameManager.handleAction(action);
 
+		await this.delay(0.5);
+
 		const gameData = this._gameManager.gameData;
 
 		if (gameData.phase === GamePhase.ROUND_END) {

@@ -2,6 +2,7 @@ import { FederatedPointerEvent } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
 import { Card, CardData, CardType } from "../card";
 import { gsap } from "gsap";
+import { CardAnimator } from "./CardAnimator";
 
 export enum CardContainerLayoutType {
 	SPREAD = "spread",
@@ -13,11 +14,11 @@ export class CardContainer extends PixiContainer {
 	private _maxWidth: number;
 	private _cardSpacing: number = 5;
 	private _isAnimating: boolean = false;
-	private _activeTransfers: Set<GSAPTween> = new Set();
 	private _areCardsInteractive: boolean = true;
 	private _containerType: CardType | null = null;
 	private _layoutType: CardContainerLayoutType = CardContainerLayoutType.SPREAD;
 	protected _cardScale: number = 1;
+	private static cardAnimator: CardAnimator = new CardAnimator();
 
 	/**
 	 * Create a new CardContainer.
@@ -46,6 +47,22 @@ export class CardContainer extends PixiContainer {
 
 	public get cards() {
 		return this._cards;
+	}
+
+	public get cardScale(): number {
+		return this._cardScale;
+	}
+
+	public get areCardsInteractive(): boolean {
+		return this._areCardsInteractive;
+	}
+
+	public get maxWidth(): number {
+		return this._maxWidth;
+	}
+
+	public get cardSpacing(): number {
+		return this._cardSpacing;
 	}
 
 	/**
@@ -116,114 +133,12 @@ export class CardContainer extends PixiContainer {
 		fromGlobalPosition: { x: number; y: number },
 		animationDuration: number = 0.5
 	): Promise<void> {
-		const card = new Card(cardData);
-
-		// Add card to this container first but don't position it yet
-		this._cards.push(card);
-		this.addChild(card);
-
-		// Apply current interactivity settings to the new card
-		card.eventMode = this._areCardsInteractive ? "static" : "none";
-		card.cursor = this._areCardsInteractive ? "pointer" : "default";
-
-		// Calculate the target position in this container's local coordinates
-		// Use the same positioning logic as updateCardPositions()
-		const cardCount = this._cards.length;
-		let cardWidth = 100; // default
-		if (this._cards.length > 1) {
-			cardWidth = this._cards[0].width;
-		} else {
-			cardWidth = card.width;
-		}
-
-		const totalWidthNeeded =
-			cardCount * cardWidth + (cardCount - 1) * this._cardSpacing;
-
-		let actualSpacing = this._cardSpacing;
-		let overlap = 0;
-
-		// If cards exceed max width, calculate overlap (same as updateCardPositions)
-		if (totalWidthNeeded > this._maxWidth) {
-			const availableSpaceForSpacing = this._maxWidth - cardCount * cardWidth;
-
-			if (availableSpaceForSpacing >= 0) {
-				actualSpacing = availableSpaceForSpacing / (cardCount - 1);
-			} else {
-				actualSpacing = 0;
-				overlap = Math.abs(availableSpaceForSpacing) / (cardCount - 1);
-			}
-		}
-
-		const totalWidth =
-			overlap > 0
-				? this._maxWidth
-				: cardCount * cardWidth + (cardCount - 1) * actualSpacing;
-
-		const startX = -totalWidth / 2 + cardWidth / 2;
-
-		// Convert the global start position to this container's local coordinates
-		const localStartPos = this.toLocal(fromGlobalPosition);
-
-		// Set the card to start at the deck position (in local coordinates)
-		card.position.set(localStartPos.x, localStartPos.y);
-
-		// Emit event for new card added
-		this.emit("cardAdded", { card, container: this });
-
-		// Calculate positions for ALL cards (new layout with the added card)
-		const cardPositions: { card: Card; targetX: number; targetY: number }[] =
-			[];
-
-		this._cards.forEach((cardInContainer, index) => {
-			let targetX: number;
-			if (overlap > 0) {
-				targetX = startX + index * (cardWidth - overlap);
-			} else {
-				targetX = startX + index * (cardWidth + actualSpacing);
-			}
-
-			cardPositions.push({
-				card: cardInContainer,
-				targetX: targetX,
-				targetY: 0,
-			});
-		});
-
-		// Animate ALL cards to their new positions
-		const animationPromises: Promise<void>[] = [];
-
-		cardPositions.forEach(({ card: cardToAnimate, targetX, targetY }) => {
-			// Check if card needs to move
-			const needsAnimation =
-				Math.abs(cardToAnimate.x - targetX) > 1 ||
-				Math.abs(cardToAnimate.y - targetY) > 1;
-
-			if (needsAnimation) {
-				const promise = new Promise<void>((resolve) => {
-					const tween = gsap.to(cardToAnimate, {
-						x: targetX,
-						y: targetY,
-						duration: animationDuration,
-						ease: "power2.out",
-						onComplete: () => {
-							resolve();
-						},
-					});
-
-					this._activeTransfers.add(tween);
-					tween.then(() => {
-						this._activeTransfers.delete(tween);
-					});
-				});
-				animationPromises.push(promise);
-			} else {
-				// Card doesn't need animation, just set position
-				cardToAnimate.position.set(targetX, targetY);
-			}
-		});
-
-		// Wait for all animations to complete
-		return Promise.all(animationPromises).then(() => {});
+		return CardContainer.cardAnimator.addCardWithAnimation(
+			this,
+			cardData,
+			fromGlobalPosition,
+			animationDuration
+		);
 	}
 
 	/**
@@ -299,122 +214,7 @@ export class CardContainer extends PixiContainer {
 		card: Card,
 		targetContainer: CardContainer
 	): Promise<void> {
-		const cardIndex = this._cards.indexOf(card);
-
-		if (cardIndex < 0 || cardIndex >= this._cards.length) {
-			throw new Error("Card not found in this container");
-		}
-
-		const cardToTransfer = this._cards[cardIndex];
-
-		const sourceScale = this.scale.x;
-		const targetScale = targetContainer.scale.x;
-
-		const sourceCardScale = this._cardScale;
-		const targetCardScale = targetContainer._cardScale;
-
-		// Calculate where this card will be positioned in the target container
-		const targetCardIndex = targetContainer._cards.length; // This will be the new card's index
-		const targetFinalPos = this.calculateCardPosition(
-			targetContainer,
-			targetCardIndex
-		);
-
-		const targetFinalGlobal = targetContainer.toGlobal(targetFinalPos);
-
-		// Convert target global position to this container's local coordinates
-		const targetLocalInSource = this.toLocal(targetFinalGlobal);
-
-		// Remove card from source container's array but keep it as a child during animation
-		this._cards.splice(cardIndex, 1);
-
-		if (cardToTransfer.showingBack) {
-			cardToTransfer.showFront();
-		}
-
-		// Disable card interactivity during animation to prevent hover effects
-		cardToTransfer.eventMode = "none";
-		cardToTransfer.cursor = "default";
-
-		this.emit("cardRemoved", { card: cardToTransfer, container: this });
-
-		return new Promise<void>((resolve) => {
-			// Calculate target visual scale:
-			// Target card scale * target container scale / source container scale
-			const targetVisualScale =
-				(targetCardScale * targetScale) / (sourceCardScale * sourceScale);
-
-			const tweenDuration = 0.4;
-
-			const positionTween = gsap.to(cardToTransfer, {
-				x: targetLocalInSource.x,
-				y: targetLocalInSource.y,
-				duration: tweenDuration,
-				ease: "power2.inOut",
-			});
-
-			const scaleTween = gsap.to(cardToTransfer.scale, {
-				x: targetVisualScale * sourceCardScale,
-				y: targetVisualScale * sourceCardScale,
-				duration: tweenDuration,
-				ease: "power2.inOut",
-				onComplete: () => {
-					// Only now remove from source and add to target
-					this.removeChild(cardToTransfer);
-
-					// Calculate the final position where this card should be
-					const finalCardIndex = targetContainer._cards.length;
-					const finalPos = this.calculateCardPosition(
-						targetContainer,
-						finalCardIndex
-					);
-
-					// Position the card at final position and set target container's card scale
-					cardToTransfer.x = finalPos.x;
-					cardToTransfer.y = finalPos.y;
-					cardToTransfer.scale.set(targetCardScale);
-
-					targetContainer._cards.push(cardToTransfer);
-					targetContainer.addChild(cardToTransfer);
-
-					// Re-enable card interactivity based on target container settings
-					cardToTransfer.eventMode = targetContainer._areCardsInteractive
-						? "static"
-						: "none";
-					cardToTransfer.cursor = targetContainer._areCardsInteractive
-						? "pointer"
-						: "default";
-
-					// Emit event for card added to target container
-					targetContainer.emit("cardAdded", {
-						card: cardToTransfer,
-						container: targetContainer,
-					});
-
-					// Remove the animations from active transfers
-					this._activeTransfers.delete(positionTween);
-					this._activeTransfers.delete(scaleTween);
-					targetContainer._activeTransfers.delete(positionTween);
-					targetContainer._activeTransfers.delete(scaleTween);
-
-					if (this._activeTransfers.size === 0) {
-						this.updateCardPositions();
-					}
-
-					if (targetContainer._activeTransfers.size === 0) {
-						targetContainer.updateCardPositions();
-					}
-
-					resolve();
-				},
-			});
-
-			this._activeTransfers.add(positionTween);
-			this._activeTransfers.add(scaleTween);
-
-			targetContainer._activeTransfers.add(positionTween);
-			targetContainer._activeTransfers.add(scaleTween);
-		});
+		return CardContainer.cardAnimator.transferCard(card, this, targetContainer);
 	}
 
 	/**
@@ -523,66 +323,5 @@ export class CardContainer extends PixiContainer {
 		Promise.all(animationPromises).then(() => {
 			this._isAnimating = false;
 		});
-	}
-
-	/**
-	 * Calculate the position for a card in the container based on index,
-	 * taking into account maxWidth and spacing/overlap.
-	 * @param container Target container
-	 * @param cardIndex Card index to calculate position for
-	 * @returns Position {x, y} for the card
-	 */
-	private calculateCardPosition(
-		container: CardContainer,
-		cardIndex: number
-	): { x: number; y: number } {
-		const totalCards = container._cards.length + 1; // +1 for the card that will be added
-
-		// Get card width from existing cards, or use a default if container is empty
-		let cardWidth = 100;
-
-		if (container._cards.length > 0) {
-			cardWidth = container._cards[0].width;
-		} else if (this._cards.length > 0) {
-			// Use width from source container if target is empty
-			cardWidth = this._cards[0].width;
-		}
-
-		const cardCount = totalCards;
-		const totalWidthNeeded =
-			cardCount * cardWidth + (cardCount - 1) * container._cardSpacing;
-
-		let actualSpacing = container._cardSpacing;
-		let overlap = 0;
-
-		// If cards exceed max width, calculate overlap
-		if (totalWidthNeeded > container._maxWidth) {
-			const availableSpaceForSpacing =
-				container._maxWidth - cardCount * cardWidth;
-
-			if (availableSpaceForSpacing >= 0) {
-				actualSpacing = availableSpaceForSpacing / (cardCount - 1);
-			} else {
-				actualSpacing = 0;
-				overlap = Math.abs(availableSpaceForSpacing) / (cardCount - 1);
-			}
-		}
-
-		const totalWidth =
-			overlap > 0
-				? container._maxWidth
-				: cardCount * cardWidth + (cardCount - 1) * actualSpacing;
-
-		const startX = -totalWidth / 2 + cardWidth / 2;
-
-		let targetX: number;
-
-		if (overlap > 0) {
-			targetX = startX + cardIndex * (cardWidth - overlap);
-		} else {
-			targetX = startX + cardIndex * (cardWidth + actualSpacing);
-		}
-
-		return { x: targetX, y: 0 };
 	}
 }
