@@ -224,6 +224,12 @@ export class GameManager {
 				this._player.siege.applyWeatherEffect();
 				this._enemy.siege.applyWeatherEffect();
 				break;
+			case CardEffect.CLEAR:
+				for (const row of this._allPlayingRowContainers) {
+					row.clearWeatherEffect();
+				}
+				this._player.weather.removeAllCards();
+				break;
 		}
 	}
 
