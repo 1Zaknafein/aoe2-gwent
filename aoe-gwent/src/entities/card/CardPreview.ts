@@ -67,9 +67,7 @@ export class CardPreview extends Container {
 	}
 
 	public async show(data: CardData): Promise<void> {
-		if (this.visible) {
-			await this.hide();
-		}
+		this._activeTween?.kill();
 
 		this.updateCard(data);
 
@@ -79,13 +77,15 @@ export class CardPreview extends Container {
 	}
 
 	public hide(): GSAPAnimation {
-		return gsap.to(this, {
+		this._activeTween = gsap.to(this, {
 			alpha: 0,
 			duration: 0.15,
 			onComplete: () => {
 				this.visible = false;
 			},
 		});
+
+		return this._activeTween;
 	}
 
 	private updateCard(cardData: CardData): void {
