@@ -189,6 +189,8 @@ export class GameManager {
 			);
 		}
 
+		card.updateShowingScore();
+
 		await player.hand.transferCardTo(card, targetRow);
 
 		if (

@@ -1,4 +1,4 @@
-import { Color, FillGradient, Graphics } from "pixi.js";
+import { Color, FillGradient, Graphics, Text } from "pixi.js";
 
 export function createRedButton(
 	width = 120,
@@ -32,4 +32,34 @@ export function createRedButton(
 	g.fill({ color: 0x000000, alpha: 0.15 });
 
 	return g;
+}
+
+/**
+ * Adjusts the font size of a Text object to fit within the specified width
+ * @param text The Text object to adjust
+ * @param maxWidth The maximum width the text should occupy
+ * @returns The modified Text object
+ */
+export function setFitWidth(
+	text: Text,
+	maxWidth: number,
+	originalFontSize?: number
+): Text {
+	if (originalFontSize === undefined) {
+		originalFontSize = text.style.fontSize;
+
+		if (originalFontSize === undefined) {
+			throw new Error("Text object has no defined font size");
+		}
+	}
+
+	let currentFontSize = originalFontSize;
+	const minFontSize = 8;
+
+	while (text.width > maxWidth && currentFontSize > minFontSize) {
+		currentFontSize -= 1;
+		text.style.fontSize = currentFontSize;
+	}
+
+	return text;
 }

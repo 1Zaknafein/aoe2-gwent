@@ -7,6 +7,7 @@ export const options: LoaderOptions = {
 				name: "sprites",
 				assets: {
 					game_background: "./sprites/game_background.webp",
+					paper: "./sprites/paper.png",
 					loader: "./sprites/loader.png",
 				},
 			},

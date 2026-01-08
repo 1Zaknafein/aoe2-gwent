@@ -1,16 +1,19 @@
-import { Container, Graphics, Text } from "pixi.js";
+import { Container, Sprite, Text } from "pixi.js";
 import { Card, CardData, CardType } from "./Card";
 import gsap from "gsap";
 import {
 	CardDescriptions,
 	EffectDescriptions,
 } from "../../shared/database/CardDescriptions";
+import { setFitWidth } from "../../ui/components/CommonComponents";
 
 export class CardPreview extends Container {
 	public card: Card;
 
-	private readonly _cardTitle: Text;
-	private readonly _cardDescription: Text;
+	private readonly _title: Text;
+	private readonly _description: Text;
+
+	private readonly _maxTextWidth: number;
 
 	private _activeTween: GSAPAnimation | null = null;
 
@@ -20,47 +23,53 @@ export class CardPreview extends Container {
 		const cardData = {
 			id: 1,
 			name: "",
-			score: 0,
+			score: 1,
 			type: CardType.MELEE,
 		};
 
 		this.card = new Card(cardData);
 		this.card.scale.set(2);
 
-		const midPos = this.card.width / 2;
+		const descriptionBg = Sprite.from("paper");
+		descriptionBg.scale.x = 1.15;
+		descriptionBg.scale.y = 0.8;
+		descriptionBg.position.set(
+			-descriptionBg.width / 2,
+			this.card.height / 2 + 5
+		);
 
-		const bg = new Graphics();
-		bg.fillStyle = { color: "#ebd098ff", alpha: 1 };
-		bg.rect(0, 0, this.card.width, 300);
-		bg.fill();
-		bg.pivot.set(midPos, -this.card.height / 2);
+		this._maxTextWidth = descriptionBg.width - 20;
 
-		this._cardTitle = new Text();
-		this._cardTitle.text = "";
-		this._cardTitle.style = {
-			fontFamily: "Arial",
+		this._title = new Text();
+		this._title.text = "";
+		this._title.style = {
+			fontFamily: "Cinzel, serif",
 			fontSize: 30,
 			fontWeight: "bold",
-			fill: "#000000",
+			fill: "#290e00",
 		};
-		this._cardTitle.anchor.set(0.5);
-		this._cardTitle.position.set(midPos, 40);
 
-		this._cardDescription = new Text();
-		this._cardDescription.text = "";
-		this._cardDescription.style = {
-			fontFamily: "Arial",
-			fontSize: 20,
-			fill: "#000000",
+		setFitWidth(this._title, this._maxTextWidth, 30);
+
+		this._title.anchor.set(0.5);
+		this._title.y = descriptionBg.y + 40;
+
+		this._description = new Text();
+		this._description.text = "";
+		this._description.style = {
+			fontFamily: "Cinzel, serif",
+			fontSize: 18,
+			fontWeight: "bold",
+			fill: "#290e00",
 			align: "center",
 			wordWrap: true,
-			wordWrapWidth: this.card.width - 20,
+			wordWrapWidth: this._maxTextWidth,
 		};
-		this._cardDescription.position.set(20, this._cardTitle.y + 40);
 
-		bg.addChild(this._cardDescription, this._cardTitle);
+		this._description.anchor.set(0.5, 0);
+		this._description.y = this._title.y + 30;
 
-		this.addChild(bg, this.card);
+		this.addChild(descriptionBg, this._description, this._title, this.card);
 
 		this.visible = false;
 		this.alpha = 0;
@@ -89,12 +98,10 @@ export class CardPreview extends Container {
 	}
 
 	private updateCard(cardData: CardData): void {
-		this.removeChild(this.card);
+		this.card.updateCardData(cardData);
 
-		this.card = new Card(cardData);
-		this.card.scale.set(2);
-
-		this.addChild(this.card);
+		this.card.width = 309;
+		this.card.height = 444;
 
 		this.updateDescription();
 	}
@@ -103,7 +110,9 @@ export class CardPreview extends Container {
 		const name = this.card.cardData.name;
 		const effect = this.card.cardData.effect;
 
-		this._cardTitle.text = name;
+		this._title.text = name;
+
+		setFitWidth(this._title, this._maxTextWidth, 30);
 
 		let description = CardDescriptions[name] || "";
 
@@ -116,6 +125,6 @@ export class CardPreview extends Container {
 			}
 		}
 
-		this._cardDescription.text = description;
+		this._description.text = description;
 	}
 }

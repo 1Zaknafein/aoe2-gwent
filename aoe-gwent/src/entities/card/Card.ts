@@ -55,17 +55,12 @@ export class Card extends Container {
 		this._typeIcon.scale.set(1.2);
 		this._typeIcon.x = (this._cardFace.width - this._typeIcon.width) / 2;
 		this._typeIcon.y = (this._cardFace.height - this._typeIcon.height) / 2;
-		this._typeIcon.visible = true;
 		this.addChild(this._typeIcon);
 
-		if (this.cardData.score === 0) return;
-
 		this._scoreBackground = createRedButton(40, 40);
-
 		this._scoreBackground.x = -this._cardBack.width / 2 + 10;
 		this._scoreBackground.y = -this._cardBack.height / 2 + 10;
 
-		this._scoreBackground.visible = true;
 		this.addChild(this._scoreBackground);
 
 		this._scoreText = new Text({
@@ -76,7 +71,12 @@ export class Card extends Container {
 		this._scoreText.anchor.set(0.5);
 		this._scoreText.x = this._scoreBackground.x + 20;
 		this._scoreText.y = this._scoreBackground.y + 20;
-		this._scoreText.visible = true;
+
+		if (this._cardData.score === 0) {
+			this._typeIcon.visible = false;
+			this._scoreBackground.visible = false;
+			this._scoreText.visible = false;
+		}
 
 		this.addChild(this._scoreText);
 	}
@@ -100,7 +100,6 @@ export class Card extends Container {
 	public updateCardData(newCardData: CardData): void {
 		this._cardData = newCardData;
 
-		// Get face texture from card ID using CardFaceTextures
 		const faceTexture = CardFaceTextures.getTexture(newCardData.id);
 		this._cardFace.texture = Sprite.from(faceTexture).texture;
 
@@ -110,6 +109,18 @@ export class Card extends Container {
 
 		const iconTexture = `icon_${newCardData.type}`;
 		this._typeIcon.texture = Sprite.from(iconTexture).texture;
+
+		this.updateShowingScore();
+	}
+
+	public updateShowingScore(): void {
+		console.log("score:", this._cardData.score);
+
+		const showScore = this._cardData.score > 0;
+
+		this._scoreText!.visible = showScore;
+		this._scoreBackground!.visible = showScore;
+		this._typeIcon.visible = showScore;
 	}
 
 	/**
@@ -150,14 +161,8 @@ export class Card extends Container {
 		this._cardBack.visible = true;
 		this._cardFace.visible = false;
 		this._typeIcon.visible = false;
-
-		if (this._scoreText) {
-			this._scoreText.visible = false;
-		}
-
-		if (this._scoreBackground) {
-			this._scoreBackground.visible = false;
-		}
+		this._scoreText!.visible = false;
+		this._scoreBackground!.visible = false;
 	}
 
 	/**
@@ -170,13 +175,7 @@ export class Card extends Container {
 		this._cardFace.visible = true;
 		this._typeIcon.visible = true;
 
-		if (this._scoreBackground) {
-			this._scoreBackground.visible = true;
-		}
-
-		if (this._scoreText) {
-			this._scoreText.visible = true;
-		}
+		this.updateShowingScore();
 	}
 }
 
