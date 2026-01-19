@@ -2,7 +2,7 @@
 
 A card game inspired by Gwent, featuring Age of Empires 2 themed cards. Built with PixiJS, TypeScript, and Vite.
 
-![Game Screenshot](./aoe-gwent/public/aoe_gwent_screenshot.png)
+![Game Screenshot](./aoe-gwent/public/sprites/aoe_gwent_screenshot.png)
 
 ## About
 
