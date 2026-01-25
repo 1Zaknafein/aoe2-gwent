@@ -18,7 +18,7 @@ export class MessageDisplay extends PixiContainer {
 	private _options: Required<MessageDisplayOptions>;
 	private _timeline?: gsap.core.Timeline;
 
-	private static readonly DEFAULT_OPTIONS: Required<MessageDisplayOptions> = {
+	private readonly defaultOptions: Required<MessageDisplayOptions> = {
 		width: 1200,
 		height: 300,
 		padding: 100,
@@ -28,10 +28,10 @@ export class MessageDisplay extends PixiContainer {
 		fontFamily: "Arial",
 	};
 
-	constructor(options: MessageDisplayOptions = {}) {
+	constructor(options: MessageDisplayOptions) {
 		super();
 
-		this._options = { ...MessageDisplay.DEFAULT_OPTIONS, ...options };
+		this._options = { ...this.defaultOptions, ...options };
 
 		this.createBackground();
 		this.createText();

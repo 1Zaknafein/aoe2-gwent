@@ -1,4 +1,5 @@
 import { MessageDisplay } from "../../ui/components/MessageDisplay";
+import { GameResolutionDisplay } from "../../ui/components/GameResolutionDisplay";
 import { GameManager } from "./GameManager";
 import { PlayerDisplayManager } from "../../entities/player";
 import { GameBoardInteractionManager } from "../../ui/scenes/GameBoardInteractionManager";
@@ -12,6 +13,7 @@ import { GameScene } from "../../ui/scenes/GameScene";
 export interface GameContext {
 	gameManager: GameManager;
 	messageDisplay: MessageDisplay;
+	gameResolutionDisplay: GameResolutionDisplay;
 	gameScene: GameScene;
 	playerDisplayManager: PlayerDisplayManager;
 	interactionManager: GameBoardInteractionManager;

@@ -24,6 +24,7 @@ export class GameManager {
 	private readonly _playerDisplayManager: PlayerDisplayManager;
 
 	private _playerScores: Map<PlayerID, number> = new Map();
+	private _roundScores: { playerScore: number; enemyScore: number }[] = [];
 
 	constructor(
 		player: Player,
@@ -51,6 +52,13 @@ export class GameManager {
 			this._enemy.ranged,
 			this._enemy.siege,
 		];
+	}
+
+	/**
+	 * Get the round-by-round scores
+	 */
+	public get roundScores(): Array<{ playerScore: number; enemyScore: number }> {
+		return this._roundScores;
 	}
 
 	/**
@@ -90,6 +98,11 @@ export class GameManager {
 	public handleRoundEnd(): void {
 		this._player.hasPassed = false;
 		this._enemy.hasPassed = false;
+
+		this._roundScores.push({
+			playerScore: this._player.score,
+			enemyScore: this._enemy.score,
+		});
 
 		let roundWinner = null;
 
@@ -146,6 +159,7 @@ export class GameManager {
 	public endGame(): void {
 		this._playerScores.set(this._player.id, 0);
 		this._playerScores.set(this._enemy.id, 0);
+		this._roundScores = [];
 
 		// Clear all player card and score data.
 		this._player.reset();

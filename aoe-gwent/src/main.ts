@@ -18,7 +18,7 @@ import { RoundEndState } from "./shared/game/states/RoundEndState";
 import { ResolutionState } from "./shared/game/states/ResolutionState";
 import { PlayerID } from "./shared/types";
 import { Player } from "./entities/player/Player";
-import { MessageDisplay } from "./ui/components";
+import { MessageDisplay, GameResolutionDisplay } from "./ui/components";
 import { GameBoardInteractionManager } from "./ui/scenes/GameBoardInteractionManager";
 import { BotPlayer } from "./local-server";
 import {
@@ -87,12 +87,6 @@ const boostsrap = async () => {
 			);
 			gameScene.gameBoard.addChild(playerDisplayManager);
 
-			const messageDisplay = new MessageDisplay();
-			messageDisplay.x = gameScene.boardWidth / 2;
-			messageDisplay.y = gameScene.boardHeight / 2;
-
-			gameScene.gameBoard.addChild(messageDisplay);
-
 			const interactionManager = new GameBoardInteractionManager(
 				player.hand,
 				player.melee,
@@ -105,10 +99,25 @@ const boostsrap = async () => {
 
 			const gameManager = new GameManager(player, enemy, playerDisplayManager);
 
+			const messageDisplay = new MessageDisplay({});
+			messageDisplay.x = gameScene.boardWidth / 2;
+			messageDisplay.y = gameScene.boardHeight / 2;
+			gameScene.gameBoard.addChild(messageDisplay);
+
+			const gameResolutionDisplay = new GameResolutionDisplay(
+				gameManager,
+				config.playerName,
+				config.enemyName
+			);
+			gameResolutionDisplay.x = gameScene.boardWidth / 2;
+			gameResolutionDisplay.y = gameScene.boardHeight / 2;
+			gameScene.gameBoard.addChild(gameResolutionDisplay);
+
 			const context: GameContext = {
 				gameManager,
 				gameScene,
 				messageDisplay,
+				gameResolutionDisplay,
 				playerDisplayManager,
 				interactionManager,
 				player,

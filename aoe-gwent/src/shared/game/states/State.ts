@@ -1,6 +1,7 @@
 import { GameManager } from "../GameManager";
 import { GameContext } from "../GameContext";
 import { MessageDisplay } from "../../../ui/components/MessageDisplay";
+import { GameResolutionDisplay } from "../../../ui/components/GameResolutionDisplay";
 import { PlayerDisplayManager } from "../../../entities/player";
 import { GameBoardInteractionManager } from "../../../ui/scenes/GameBoardInteractionManager";
 
@@ -21,12 +22,14 @@ export enum StateName {
 export abstract class State {
 	protected gameManager: GameManager;
 	protected messageDisplay: MessageDisplay;
+	protected gameResolutionDisplay: GameResolutionDisplay;
 	protected playerDisplayManager: PlayerDisplayManager;
 	protected interactionManager: GameBoardInteractionManager;
 
 	constructor(context: GameContext) {
 		this.gameManager = context.gameManager;
 		this.messageDisplay = context.messageDisplay;
+		this.gameResolutionDisplay = context.gameResolutionDisplay;
 		this.playerDisplayManager = context.playerDisplayManager;
 		this.interactionManager = context.interactionManager;
 	}
