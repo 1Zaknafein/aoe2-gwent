@@ -1,9 +1,9 @@
 import { Text, TextStyle } from "pixi.js";
 import { PixiGraphics, PixiSprite } from "../../plugins/engine";
 import { CardContainer, CardContainerLayoutType } from "./CardContainer";
-import { CardEffect, CardType } from "./Card";
 import { WeatherEffect } from "./WeatherEffect";
 import { gsap } from "gsap";
+import { CardEffect, CardType } from "../../local-server/CardDatabase";
 
 export interface PlayingRowConfig {
 	width: number;

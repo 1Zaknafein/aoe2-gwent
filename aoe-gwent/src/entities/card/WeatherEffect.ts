@@ -1,6 +1,6 @@
 import { Container, Sprite, Texture, Filter, GlProgram } from "pixi.js";
-import { CardEffect } from "./Card";
 import { gsap } from "gsap";
+import { CardEffect } from "../../local-server/CardDatabase";
 
 /**
  * Weather effect overlay with shader-based animations

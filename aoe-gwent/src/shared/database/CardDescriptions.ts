@@ -1,4 +1,4 @@
-import { CardEffect } from "../../entities/card/Card";
+import { CardEffect } from "../../local-server/CardDatabase";
 
 /**
  * Card descriptions database using card names as keys

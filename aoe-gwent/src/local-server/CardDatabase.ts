@@ -1,5 +1,30 @@
-import { CardData } from "../entities/card";
-import { CardEffect, CardType } from "../entities/card/Card";
+import { Texture } from "pixi.js";
+
+export enum CardType {
+	MELEE = "melee",
+	RANGED = "ranged",
+	SIEGE = "siege",
+	RANGED_MELEE = "ranged_melee",
+	WEATHER = "weather",
+	SPECIAL = "special",
+}
+
+export const enum CardEffect {
+	FREEZE = "freeze",
+	FOG = "fog",
+	RAIN = "rain",
+	CLEAR = "clear",
+	BOOST = "boost",
+}
+
+export interface CardData {
+	id: number;
+	name: string;
+	score: number;
+	type: CardType;
+	effect?: CardEffect;
+	baseScore?: number;
+}
 
 /**
  * Local card database that stores card definitions.
@@ -16,6 +41,21 @@ export class CardDatabase {
 		}
 
 		return deck;
+	}
+
+	public static getTexture(cardId: number): Texture {
+		const card = CardDatabase.cards.find((card) => card.id === cardId);
+
+		if (!card) {
+			throw new Error(`Card with ID ${cardId} not found in database.`);
+		}
+
+		// Use card name to determine texture name.
+		// Texture names must match card names.
+		// Spaces are replaced with underscores and all letters are lowercase for texture naming convention.
+		const textureName = card.name.toLowerCase().replace(/\s+/g, "_");
+
+		return Texture.from(textureName);
 	}
 
 	private static readonly cards: CardData[] = [

@@ -83,7 +83,6 @@ export class CardContainer extends PixiContainer {
 
 		const cardType = card.cardData.type;
 
-		// Direct type match
 		if (cardType === this._containerType) {
 			return true;
 		}
@@ -109,14 +108,11 @@ export class CardContainer extends PixiContainer {
 		this._cards.push(card);
 		this.addChild(card);
 
-		// Apply container's card scale
 		card.scale.set(this._cardScale);
 
-		// Apply current interactivity settings to the new card
 		card.eventMode = this._areCardsInteractive ? "static" : "none";
 		card.cursor = this._areCardsInteractive ? "pointer" : "default";
 
-		// Emit event for new card added (useful for setting up interactions)
 		this.emit("cardAdded", { card, container: this });
 
 		this.updateCardPositions();

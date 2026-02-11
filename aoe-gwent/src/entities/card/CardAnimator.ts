@@ -1,6 +1,7 @@
 import { gsap } from "gsap";
-import { Card, CardData } from "./Card";
 import { CardContainer } from "./CardContainer";
+import { CardData } from "../../local-server/CardDatabase";
+import { Card } from "./Card";
 
 /**
  * Handles card animations for transfers and placements

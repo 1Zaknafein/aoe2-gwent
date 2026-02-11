@@ -1,7 +1,7 @@
 import { Container, Graphics, Sprite, Text, TextStyle } from "pixi.js";
-import { CardFaceTextures } from "../../shared/database/CardFaceTextures.js";
 import gsap from "gsap";
 import { createRedButton } from "../../ui/components/CommonComponents.js";
+import { CardDatabase, CardData } from "../../local-server/CardDatabase.js";
 
 export class Card extends Container {
 	private _cardData: CardData;
@@ -42,8 +42,12 @@ export class Card extends Container {
 		this._cardBack.visible = false;
 		this.addChild(this._cardBack);
 
-		const faceTexture = CardFaceTextures.getTexture(this._cardData.id);
-		this._cardFace = Sprite.from(faceTexture);
+		const faceTexture = CardDatabase.getTexture(this._cardData.id);
+
+		this._cardFace = new Sprite({
+			texture: faceTexture,
+		});
+
 		this._cardFace.anchor.set(0.5);
 		this._cardFace.visible = true;
 		this._cardFace.scale.set(0.5);
@@ -100,8 +104,8 @@ export class Card extends Container {
 	public updateCardData(newCardData: CardData): void {
 		this._cardData = newCardData;
 
-		const faceTexture = CardFaceTextures.getTexture(newCardData.id);
-		this._cardFace.texture = Sprite.from(faceTexture).texture;
+		const faceTexture = CardDatabase.getTexture(newCardData.id);
+		this._cardFace.texture = faceTexture;
 
 		if (this._scoreText) {
 			this._scoreText.text = newCardData.score.toString();
@@ -114,8 +118,6 @@ export class Card extends Container {
 	}
 
 	public updateShowingScore(): void {
-		console.log("score:", this._cardData.score);
-
 		const showScore = this._cardData.score > 0;
 
 		this._scoreText!.visible = showScore;
@@ -177,31 +179,4 @@ export class Card extends Container {
 
 		this.updateShowingScore();
 	}
-}
-
-export enum CardType {
-	MELEE = "melee",
-	RANGED = "ranged",
-	SIEGE = "siege",
-	RANGED_MELEE = "ranged_melee", // Can be placed in either melee or ranged rows
-	WEATHER = "weather",
-
-	SPECIAL = "special",
-}
-
-export interface CardData {
-	id: number;
-	name: string;
-	score: number;
-	type: CardType;
-	effect?: CardEffect;
-	baseScore?: number;
-}
-
-export const enum CardEffect {
-	FREEZE = "freeze",
-	FOG = "fog",
-	RAIN = "rain",
-	CLEAR = "clear",
-	BOOST = "boost",
 }

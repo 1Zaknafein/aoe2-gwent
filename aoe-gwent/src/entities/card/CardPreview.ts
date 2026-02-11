@@ -1,11 +1,12 @@
 import { Container, Sprite, Text } from "pixi.js";
-import { Card, CardData, CardType } from "./Card";
 import gsap from "gsap";
 import {
 	CardDescriptions,
 	EffectDescriptions,
 } from "../../shared/database/CardDescriptions";
 import { setFitWidth } from "../../ui/components/CommonComponents";
+import { CardData, CardType } from "../../local-server/CardDatabase";
+import { Card } from "./Card";
 
 export class CardPreview extends Container {
 	public card: Card;

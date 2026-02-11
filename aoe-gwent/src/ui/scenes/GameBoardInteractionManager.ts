@@ -1,5 +1,9 @@
-import { Card, CardType } from "../../entities/card/Card";
-import { PlayingRowContainer, HandContainer } from "../../entities/card";
+import { Card } from "../../entities/card/Card";
+import {
+	PlayingRowContainer,
+	HandContainer,
+	CardType,
+} from "../../entities/card";
 import { gsap } from "gsap";
 import { WeatherRowContainer } from "../../entities/card/WeatherRowContainer";
 import { EventEmitter } from "pixi.js";
