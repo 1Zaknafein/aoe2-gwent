@@ -79,9 +79,6 @@ export class GameManager {
 		this._enemy.hand.addCardsBatch(this._enemy.deck.splice(0, 10));
 		this._enemy.hand.hideCards();
 
-		this._player.hand.cards.forEach((card) => {
-			console.log(card.cardData.id, card.cardData.name);
-		});
 		this._playerDisplayManager.playerDisplay.setRoundWins(0);
 		this._playerDisplayManager.enemyDisplay.setRoundWins(0);
 	}

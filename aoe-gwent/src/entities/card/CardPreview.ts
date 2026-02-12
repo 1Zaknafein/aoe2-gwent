@@ -31,15 +31,11 @@ export class CardPreview extends Container {
 		this.card = new Card(cardData);
 		this.card.scale.set(2);
 
-		const descriptionBg = Sprite.from("paper");
-		descriptionBg.scale.x = 1.15;
-		descriptionBg.scale.y = 0.8;
-		descriptionBg.position.set(
-			-descriptionBg.width / 2,
-			this.card.height / 2 + 5
-		);
+		const paper = Sprite.from("paper");
+		paper.scale.set(1.15, 0.8);
+		paper.position.set(-paper.width / 2, this.card.height / 2 + 5);
 
-		this._maxTextWidth = descriptionBg.width - 20;
+		this._maxTextWidth = paper.width - 20;
 
 		this._title = new Text();
 		this._title.text = "";
@@ -53,7 +49,7 @@ export class CardPreview extends Container {
 		setFitWidth(this._title, this._maxTextWidth, 30);
 
 		this._title.anchor.set(0.5);
-		this._title.y = descriptionBg.y + 40;
+		this._title.y = paper.y + 40;
 
 		this._description = new Text();
 		this._description.text = "";
@@ -70,7 +66,7 @@ export class CardPreview extends Container {
 		this._description.anchor.set(0.5, 0);
 		this._description.y = this._title.y + 30;
 
-		this.addChild(descriptionBg, this._description, this._title, this.card);
+		this.addChild(paper, this._description, this._title, this.card);
 
 		this.visible = false;
 		this.alpha = 0;
@@ -112,7 +108,7 @@ export class CardPreview extends Container {
 		const effect = this.card.cardData.effect;
 
 		this._title.text = name;
-
+		this._title.style.fontSize = 30;
 		setFitWidth(this._title, this._maxTextWidth, 30);
 
 		let description = CardDescriptions[name] || "";
