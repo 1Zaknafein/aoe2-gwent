@@ -6,6 +6,7 @@ import {
 	SelfEffects,
 	AuraEffects,
 	TriggerEffects,
+	EffectMetadata,
 } from "./CardEffects";
 
 export enum CardType {
@@ -37,9 +38,9 @@ export interface CardData {
 	tags?: CardTag[];
 
 	// Card effect system
-	selfEffect?: SelfEffectFunction; // Modifies own score based on conditions
-	auraEffect?: AuraEffectFunction; // Affects other cards
-	onPlayEffect?: TriggerEffectFunction; // Triggers once when played
+	selfEffect?: EffectMetadata<SelfEffectFunction>; // Modifies own score based on conditions
+	auraEffect?: EffectMetadata<AuraEffectFunction>; // Affects other cards
+	onPlayEffect?: EffectMetadata<TriggerEffectFunction>; // Triggers once when played
 }
 
 /**
@@ -224,6 +225,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.FREEZE,
+			auraEffect: AuraEffects.freezeEffect,
 		},
 		{
 			id: 102,
@@ -231,6 +233,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.FOG,
+			auraEffect: AuraEffects.fogEffect,
 		},
 		{
 			id: 103,
@@ -238,6 +241,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.RAIN,
+			auraEffect: AuraEffects.rainEffect,
 		},
 		{
 			id: 104,
@@ -245,6 +249,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.CLEAR,
+			onPlayEffect: TriggerEffects.clearEffect,
 		},
 	] as const;
 }

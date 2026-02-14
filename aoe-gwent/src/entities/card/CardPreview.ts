@@ -1,9 +1,5 @@
 import { Container, Sprite, Text, Texture } from "pixi.js";
 import gsap from "gsap";
-import {
-	CardDescriptions,
-	EffectDescriptions,
-} from "../../shared/database/CardDescriptions";
 import { setFitWidth } from "../../ui/components/CommonComponents";
 import { CardData, CardType } from "../../local-server/CardDatabase";
 import { Card } from "./Card";
@@ -17,6 +13,7 @@ export class CardPreview extends Container {
 
 	private readonly _border: Sprite;
 	private readonly _descriptionText: Text;
+	private readonly _descriptionBg: Sprite;
 
 	private _activeTween: GSAPAnimation | null = null;
 
@@ -49,7 +46,6 @@ export class CardPreview extends Container {
 		this._border.y = 15;
 
 		this._title = new Text();
-		this._title.text = "TEST";
 		this._title.anchor.set(0.5);
 		this._title.y = 253;
 		this._title.style = {
@@ -94,28 +90,26 @@ export class CardPreview extends Container {
 		this._score.y = 263;
 		this._score.x = -150;
 
-		const descriptionBg = Sprite.from("paper");
-		descriptionBg.scale.set(1.15, 0.8);
-		descriptionBg.x = -descriptionBg.width / 2;
-		descriptionBg.y = this.card.height / 2 + 5;
+		this._descriptionBg = Sprite.from("paper");
+		this._descriptionBg.scale.set(1.15, 0.5);
+		this._descriptionBg.x = -this._descriptionBg.width / 2;
+		this._descriptionBg.y = 300;
 
 		this._descriptionText = new Text();
-		this._descriptionText.text = "";
 		this._descriptionText.style = {
-			fontFamily: "Cinzel, serif",
-			fontSize: 18,
+			fontSize: 22,
 			fontWeight: "bold",
 			fill: "#290e00",
 			align: "center",
 			wordWrap: true,
-			wordWrapWidth: descriptionBg.width - 40,
+			wordWrapWidth: this._descriptionBg.width - 30,
 		};
 
 		this._descriptionText.anchor.set(0.5, 0);
-		this._descriptionText.y = this._title.y + 110;
+		this._descriptionText.y = 330;
 
 		this.addChild(
-			descriptionBg,
+			this._descriptionBg,
 			this._descriptionText,
 			this.card,
 			this._border,
@@ -124,8 +118,8 @@ export class CardPreview extends Container {
 			this._score
 		);
 
-		this.visible = true;
-		this.alpha = 1;
+		this.visible = false;
+		this.alpha = 0;
 	}
 
 	public async show(data: CardData): Promise<void> {
@@ -161,13 +155,11 @@ export class CardPreview extends Container {
 
 	private updateDescription(): void {
 		const name = this.card.cardData.name;
-		const effect = this.card.cardData.effect;
+		const texture = this._rowTypeIcons.get(this.card.cardData.type);
 
 		this._title.text = name;
 		this._title.style.fontSize = 30;
 		setFitWidth(this._title, 230, 30);
-
-		const texture = this._rowTypeIcons.get(this.card.cardData.type);
 
 		if (texture && this._icon.texture !== texture) {
 			this._icon.texture = texture;
@@ -181,17 +173,31 @@ export class CardPreview extends Container {
 			this._score.text = "";
 		}
 
-		let description = CardDescriptions[name] || "";
+		const cardData = this.card.cardData;
 
-		// Add effect description if the card has an effect
-		if (effect) {
-			const effectDescription = EffectDescriptions[effect];
+		// There is only one effect per card, but we check all 3 possible effect types just in case for future extensibility.
+		const effectDescriptions = [];
 
-			if (effectDescription) {
-				description += `\n\n${effectDescription}`;
-			}
+		if (cardData.selfEffect) {
+			effectDescriptions.push(cardData.selfEffect.description);
 		}
 
-		this._descriptionText.text = description;
+		if (cardData.auraEffect) {
+			effectDescriptions.push(cardData.auraEffect.description);
+		}
+
+		if (cardData.onPlayEffect) {
+			effectDescriptions.push(cardData.onPlayEffect.description);
+		}
+
+		if (effectDescriptions.length === 0) {
+			this._descriptionBg.visible = false;
+			this._descriptionText.visible = false;
+		} else {
+			this._descriptionBg.visible = true;
+			this._descriptionText.visible = true;
+		}
+
+		this._descriptionText.text = effectDescriptions.join("\n");
 	}
 }
