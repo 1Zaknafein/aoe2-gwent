@@ -1,9 +1,10 @@
-import { Graphics, Sprite, Text, TextStyle } from "pixi.js";
+import { Container, Graphics, Sprite, Text, TextStyle } from "pixi.js";
 import { PixiGraphics, PixiSprite } from "../../plugins/engine";
 import { CardContainer, CardContainerLayoutType } from "./CardContainer";
 import { WeatherEffect } from "./WeatherEffect";
 import { gsap } from "gsap";
 import { CardEffect, CardType } from "../../local-server/CardDatabase";
+import { BorderDialog } from "../../ui/components/BorderDialog";
 
 export interface PlayingRowConfig {
 	width: number;
@@ -16,7 +17,7 @@ export interface PlayingRowConfig {
  * Specialized container for playing rows (Melee, Ranged, Siege).
  */
 export class PlayingRowContainer extends CardContainer {
-	private rowBackground: Graphics;
+	private rowBackground: Container;
 	private highlightOverlay: Graphics;
 	private weatherEffect: WeatherEffect;
 	private typeIcon: Sprite;
@@ -36,7 +37,12 @@ export class PlayingRowContainer extends CardContainer {
 
 		this.config = config;
 
-		this.rowBackground = this.createBackground();
+		this.rowBackground = new BorderDialog(config.width, config.height);
+		this.rowBackground.pivot.set(
+			this.rowBackground.width / 2,
+			this.rowBackground.height / 2
+		);
+
 		this.highlightOverlay = this.createHighlight();
 
 		// Determine weather effect based on container type
@@ -160,67 +166,17 @@ export class PlayingRowContainer extends CardContainer {
 		this.updateScore();
 	}
 
-	private createBackground(): Graphics {
-		const bg = new Graphics();
-		const { width, height } = this.config;
-		const bgX = -width / 2;
-		const bgY = -height / 2;
-
-		// Main background
-		bg.rect(bgX, bgY, width, height);
-		bg.fill({ color: 0x654321, alpha: 0.3 });
-
-		// Decorative double border
-		bg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });
-		bg.rect(bgX + 3, bgY + 3, width - 6, height - 6);
-		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
-
-		// Corner decorations
-		const cornerSize = 15;
-		const cornerInset = 10;
-
-		// Top-left corner
-		bg.moveTo(bgX + cornerInset, bgY + cornerInset);
-		bg.lineTo(bgX + cornerInset + cornerSize, bgY + cornerInset);
-		bg.moveTo(bgX + cornerInset, bgY + cornerInset);
-		bg.lineTo(bgX + cornerInset, bgY + cornerInset + cornerSize);
-
-		// Top-right corner
-		bg.moveTo(bgX + width - cornerInset, bgY + cornerInset);
-		bg.lineTo(bgX + width - cornerInset - cornerSize, bgY + cornerInset);
-		bg.moveTo(bgX + width - cornerInset, bgY + cornerInset);
-		bg.lineTo(bgX + width - cornerInset, bgY + cornerInset + cornerSize);
-
-		// Bottom-left corner
-		bg.moveTo(bgX + cornerInset, bgY + height - cornerInset);
-		bg.lineTo(bgX + cornerInset + cornerSize, bgY + height - cornerInset);
-		bg.moveTo(bgX + cornerInset, bgY + height - cornerInset);
-		bg.lineTo(bgX + cornerInset, bgY + height - cornerInset - cornerSize);
-
-		// Bottom-right corner
-		bg.moveTo(bgX + width - cornerInset, bgY + height - cornerInset);
-		bg.lineTo(
-			bgX + width - cornerInset - cornerSize,
-			bgY + height - cornerInset
-		);
-		bg.moveTo(bgX + width - cornerInset, bgY + height - cornerInset);
-		bg.lineTo(
-			bgX + width - cornerInset,
-			bgY + height - cornerInset - cornerSize
-		);
-
-		bg.stroke({ color: 0xffd700, width: 2, alpha: 0.5 });
-
-		return bg;
-	}
-
 	private createHighlight(): PixiGraphics {
 		const highlight = new PixiGraphics();
 		const { width, height } = this.config;
-		const bgX = -width / 2;
-		const bgY = -height / 2;
 
-		highlight.rect(bgX, bgY, width, height);
+		// Scale down slightly, to account for border.
+		const overlayWidth = width - 19;
+		const overlayHeight = height - 21;
+		const bgX = -overlayWidth / 2;
+		const bgY = -overlayHeight / 2;
+
+		highlight.rect(bgX, bgY, overlayWidth, overlayHeight);
 		highlight.fill({ color: 0x00ff00, alpha: 0.15 });
 		highlight.stroke({ color: 0x00ff00, width: 3, alpha: 0.6 });
 		highlight.visible = false;
@@ -251,6 +207,7 @@ export class PlayingRowContainer extends CardContainer {
 		}
 
 		const icon = Sprite.from(iconName);
+		icon.scale.set(0.9);
 		icon.anchor.set(0.5);
 		icon.position.set(bgX + 65, 0);
 		icon.alpha = 0.3;

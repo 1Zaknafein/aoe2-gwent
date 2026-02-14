@@ -49,7 +49,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	public readonly playerDeck: Deck;
 	public readonly opponentDeck: Deck;
 
-	private readonly ROW_HEIGHT = 130;
+	private readonly rowHeight = 140;
 	private readonly LEFT_MARGIN = 450;
 	private readonly RIGHT_MARGIN = 350;
 
@@ -78,28 +78,31 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		const centerX = this.boardWidth / 2;
 		const rowWidth = this.boardWidth - this.LEFT_MARGIN - this.RIGHT_MARGIN;
 
-		const helper = new GameSceneBuildHelper(130, rowWidth);
+		const helper = new GameSceneBuildHelper(this.rowHeight, rowWidth);
 
+		// Enemy rows
 		this.opponentSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
 		this.opponentSiegeRow.position.set(centerX, 280);
 
 		this.opponentRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
-		this.opponentRangedRow.position.set(centerX, 420);
+		this.opponentRangedRow.position.set(centerX, 430);
 
 		this.opponentMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
-		this.opponentMeleeRow.position.set(centerX, 560);
+		this.opponentMeleeRow.position.set(centerX, 580);
 
-		const opponentMeleeY = 560;
-		const playerMeleeY = 790;
+		this.opponentDiscard = helper.createDiscardPile();
+		this.opponentDiscard.position.set(2100, 108);
 
-		const dividerY = (opponentMeleeY + playerMeleeY) / 2;
-		const divider = helper.createDivider(centerX, dividerY, centerX);
+		this.opponentDeck = new Deck();
+		this.opponentDeck.setPosition(this.boardWidth - 125, 115);
+		this.opponentDeck.scale.set(0.75);
 
+		// Player rows
 		this.playerMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
-		this.playerMeleeRow.position.set(centerX, 790);
+		this.playerMeleeRow.position.set(centerX, 770);
 
 		this.playerRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
-		this.playerRangedRow.position.set(centerX, 930);
+		this.playerRangedRow.position.set(centerX, 920);
 
 		this.playerSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
 		this.playerSiegeRow.position.set(centerX, 1070);
@@ -110,34 +113,29 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.playerHand = helper.createHandContainer(true);
 		this.playerHand.position.set(centerX, 1240);
 
-		this.weatherRow = new WeatherRowContainer({
-			containerType: CardType.WEATHER,
-			width: 350,
-			height: this.ROW_HEIGHT,
-		});
-		this.weatherRow.position.set(200, this.boardHeight / 2);
-
 		this.playerDiscard = helper.createDiscardPile();
 		this.playerDiscard.position.set(2100, 1242);
 
-		this.opponentDiscard = helper.createDiscardPile();
-		this.opponentDiscard.position.set(2100, 108);
+		this.playerDeck = new Deck();
+		this.playerDeck.setPosition(this.boardWidth - 125, this.boardHeight - 105);
+		this.playerDeck.scale.set(0.75);
+
+		// Other rows
+		const dividerY = (this.opponentMeleeRow.y + this.playerMeleeRow.y) / 2;
+		const divider = helper.createDivider(centerX, dividerY, centerX);
+
+		this.weatherRow = new WeatherRowContainer({
+			containerType: CardType.WEATHER,
+			width: 350,
+			height: this.rowHeight,
+		});
+		this.weatherRow.position.set(200, this.boardHeight / 2);
 
 		this.cardPreview = new CardPreview();
 		this.cardPreview.position.set(
 			this.boardWidth - 200,
 			this.boardHeight / 2 - 150
 		);
-
-		const boardWidth = this.boardWidth;
-
-		this.playerDeck = new Deck();
-		this.playerDeck.setPosition(boardWidth - 125, this.boardHeight - 105);
-		this.playerDeck.scale.set(0.75);
-
-		this.opponentDeck = new Deck();
-		this.opponentDeck.setPosition(boardWidth - 125, 115);
-		this.opponentDeck.scale.set(0.75);
 
 		this.gameBoard.addChild(
 			this.background,

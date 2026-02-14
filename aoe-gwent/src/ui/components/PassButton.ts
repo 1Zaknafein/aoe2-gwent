@@ -1,10 +1,10 @@
-import { Text } from "pixi.js";
-import { PixiGraphics, PixiText } from "../../plugins/engine";
+import { Container, Text } from "pixi.js";
+import { PixiText } from "../../plugins/engine";
 import { Button } from "./Button";
-import { createRedButton } from "./CommonComponents";
+import { BorderDialog } from "./BorderDialog";
 
 export class PassButton extends Button {
-	private _background: PixiGraphics;
+	private _background: Container;
 	private _label: PixiText;
 	private _enabled: boolean = false;
 
@@ -13,14 +13,15 @@ export class PassButton extends Button {
 		const height = 80;
 		super(onClick, width, height);
 
-		this._background = createRedButton(width, height);
+		this._background = new BorderDialog(width, height);
+
 		this.addChild(this._background);
 
 		this._label = new Text({
 			text: "PASS",
 			style: {
-				fontFamily: "Arial",
-				fontSize: 40,
+				fontFamily: "Cinzel, serif",
+				fontSize: 44,
 				fontWeight: "bold",
 				fill: "#ffe1c8ff",
 			},
@@ -28,6 +29,7 @@ export class PassButton extends Button {
 
 		this._label.x = (width - this._label.width) / 2;
 		this._label.y = (height - this._label.height) / 2;
+
 		this.addChild(this._label);
 
 		this.on("pointerdown", this.onPassPointerDown.bind(this));

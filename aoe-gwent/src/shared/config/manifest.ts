@@ -17,6 +17,11 @@ export const options: LoaderOptions = {
 					card_border: "./sprites/cards/card_border.png",
 					card_back: "./sprites/cards/card_back.png",
 					card_preview_border: "./sprites/cards/card_preview_border.png",
+					golden_border: "./sprites/golden_border.png",
+					leather_fill: "./sprites/leather_fill.png",
+					old_paper: "./sprites/old_paper.png",
+					wood: "./sprites/wood_texture.png",
+					dirt: "./sprites/dirty_texture.png",
 
 					crossbowman: "./sprites/cards/card_faces/crossbowman.png",
 					knight: "./sprites/cards/card_faces/knight.png",

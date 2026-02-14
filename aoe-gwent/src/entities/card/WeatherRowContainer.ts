@@ -1,8 +1,9 @@
-import { Graphics, Sprite } from "pixi.js";
+import { Container, Graphics, Sprite } from "pixi.js";
 import { PixiGraphics } from "../../plugins/engine";
 import { CardContainer, CardContainerLayoutType } from "./CardContainer";
 import { gsap } from "gsap";
 import { PlayingRowConfig } from "./PlayingRowContainer";
+import { BorderDialog } from "../../ui/components/BorderDialog";
 
 type WeatherRowConfig = Omit<PlayingRowConfig, "labelColor">;
 
@@ -11,8 +12,8 @@ type WeatherRowConfig = Omit<PlayingRowConfig, "labelColor">;
  * highlighting support, labels, and score displays.
  */
 export class WeatherRowContainer extends CardContainer {
-	private rowBackground: PixiGraphics;
-	private highlightOverlay: PixiGraphics;
+	private rowBackground: Container;
+	private highlightOverlay: Graphics;
 	private config: WeatherRowConfig;
 
 	constructor(config: WeatherRowConfig) {
@@ -25,12 +26,17 @@ export class WeatherRowContainer extends CardContainer {
 
 		this.config = config;
 
-		this.rowBackground = this.createBackground();
+		this.rowBackground = new BorderDialog(config.width, config.height);
+		this.rowBackground.pivot.set(
+			this.rowBackground.width / 2,
+			this.rowBackground.height / 2
+		);
+
 		this.highlightOverlay = this.createHighlight();
 
 		const typeIcon = Sprite.from("icon_weather");
 		typeIcon.anchor.set(0.5);
-		typeIcon.x = -config.width / 2 + 50;
+		typeIcon.x = -config.width / 2 + 60;
 		typeIcon.alpha = 0.3;
 
 		this.addChild(this.rowBackground, typeIcon, this.highlightOverlay);
@@ -62,24 +68,6 @@ export class WeatherRowContainer extends CardContainer {
 				this.highlightOverlay.visible = false;
 			},
 		});
-	}
-
-	private createBackground(): Graphics {
-		const weatherWidth = 360;
-		const weatherHeight = 130;
-
-		const bg = new Graphics();
-		const bgX = -weatherWidth / 2;
-		const bgY = -weatherHeight / 2;
-
-		bg.rect(bgX, bgY, weatherWidth, weatherHeight);
-		bg.fill({ color: 0x2a2013, alpha: 0.3 });
-
-		bg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });
-		bg.rect(bgX + 3, bgY + 3, weatherWidth - 6, weatherHeight - 6);
-		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
-
-		return bg;
 	}
 
 	private createHighlight(): PixiGraphics {

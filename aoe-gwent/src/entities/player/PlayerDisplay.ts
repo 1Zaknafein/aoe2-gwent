@@ -1,7 +1,8 @@
-import { Text, TextStyle, Graphics } from "pixi.js";
+import { Text, TextStyle, Graphics, Container } from "pixi.js";
 import { PixiContainer } from "../../plugins/engine";
 import { CardContainer } from "../card";
 import { PassButton } from "../../ui/components";
+import { BorderDialog } from "../../ui/components/BorderDialog";
 
 export class PlayerDisplay extends PixiContainer {
 	public playerNameText!: Text;
@@ -11,7 +12,7 @@ export class PlayerDisplay extends PixiContainer {
 	public handLabel!: Text;
 	public roundWin1!: Graphics;
 	public roundWin2!: Graphics;
-	public displayBackground!: Graphics;
+	public displayBackground!: Container;
 	public passButton?: PassButton;
 
 	private _isEnemy: boolean;
@@ -191,23 +192,7 @@ export class PlayerDisplay extends PixiContainer {
 		const width = 360;
 		const height = 180;
 
-		this.displayBackground = new Graphics();
-
-		this.displayBackground.rect(0, 0, width, height);
-		this.displayBackground.fill({ color: 0x3d2817, alpha: 0.9 });
-
-		this.displayBackground.stroke({ color: 0x8b6914, width: 4, alpha: 0.8 });
-		this.displayBackground.rect(4, 4, width - 8, height - 8);
-		this.displayBackground.stroke({ color: 0xd4af37, width: 2, alpha: 0.6 });
-
-		const innerBorder = 12;
-		this.displayBackground.rect(
-			innerBorder,
-			innerBorder,
-			width - innerBorder * 2,
-			height - innerBorder * 2
-		);
-		this.displayBackground.stroke({ color: 0x5a3d1f, width: 1, alpha: 0.5 });
+		this.displayBackground = new BorderDialog(width, height, "dirt");
 
 		this.addChild(this.displayBackground);
 	}

@@ -6,6 +6,7 @@ import {
 	HandContainer,
 	PlayingRowContainer,
 } from "../../entities/card";
+import { BorderDialog } from "../components/BorderDialog";
 
 export class GameSceneBuildHelper {
 	private readonly _rowHeight: number;
@@ -79,16 +80,8 @@ export class GameSceneBuildHelper {
 		const width = 130;
 		const height = 175;
 
-		const bg = new Graphics();
-		const bgX = -width / 2;
-		const bgY = -height / 2;
-
-		bg.rect(bgX, bgY, width, height);
-		bg.fill({ color: 0x2a2013, alpha: 0.3 });
-
-		bg.stroke({ color: 0x8b6914, width: 3, alpha: 0.6 });
-		bg.rect(bgX + 3, bgY + 3, width - 6, height - 6);
-		bg.stroke({ color: 0xd4af37, width: 2, alpha: 0.4 });
+		const bg = new BorderDialog(width, height);
+		bg.pivot.set(bg.width / 2, bg.height / 2);
 
 		const discardPile = new CardContainer(
 			width,
