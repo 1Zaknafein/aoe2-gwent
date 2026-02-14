@@ -1,10 +1,18 @@
 import { gsap } from "gsap";
-import { Container, FillGradient, Graphics, Text } from "pixi.js";
+import {
+	Container,
+	Graphics,
+	NineSliceSprite,
+	Sprite,
+	Text,
+	TextStyle,
+	Texture,
+} from "pixi.js";
 import { GameManager } from "../../shared/game/GameManager";
 import { PlayerID } from "../../shared/types";
+import { FontStyles } from "../../shared/FontStyles";
 
 export class GameResolutionDisplay extends Container {
-	private _background!: Graphics;
 	private _gameManager: GameManager;
 	private _tableContainer!: Container;
 	private _playerName: string;
@@ -28,16 +36,56 @@ export class GameResolutionDisplay extends Container {
 		this._playerName = playerName;
 		this._enemyName = enemyName;
 
-		this.createBackground();
-		this.createTableContainer();
+		const background = Sprite.from("resolution_dialog_fill");
+		background.tint = "#dbdbdb";
+		background.anchor.set(0.5);
+		background.width = 500;
+		background.height = 400;
+		background.y = 100;
+		this.addChild(background);
+
+		const border = new NineSliceSprite({
+			texture: Texture.from("golden_border"),
+			leftWidth: 15,
+			topHeight: 15,
+			rightWidth: 15,
+			bottomHeight: 15,
+			width: background.width + 10,
+			height: background.height + 10,
+		});
+
+		border.y = background.y;
+		border.pivot.set(border.width / 2, border.height / 2);
+		this.addChild(border);
+
+		const header = Sprite.from("resolution_dialog_header");
+		header.anchor.set(0.5);
+		header.y = -150;
+		this.addChild(header);
+
+		this._tableContainer = new Container();
+		this.addChild(this._tableContainer);
+
+		const victoryText = new Text({
+			text: "VICTORY!",
+			style: new TextStyle({
+				...FontStyles.scoreTextStyle,
+				fontSize: 70,
+				fill: "#d1c072",
+			}),
+			anchor: 0.5,
+			y: -130,
+		});
+
+		this.addChild(victoryText);
+
 		this.createAllTextObjects();
 
-		this.pivot.set(this.width / 2, this.height / 2);
 		this.interactive = false;
 		this.eventMode = "none";
 
-		this.alpha = 0;
-		this.visible = false;
+		this.alpha = 1;
+		this.visible = true;
 	}
 
 	/**
@@ -69,31 +117,6 @@ export class GameResolutionDisplay extends Container {
 			);
 
 		return timeline;
-	}
-
-	private createBackground(): void {
-		const width = 1400;
-		const height = 600;
-		const backgroundColor = "#000000";
-
-		const gradient = new FillGradient(0, 0, width, 0);
-		const fadeColor = backgroundColor + "00";
-
-		gradient.addColorStop(0, fadeColor);
-		gradient.addColorStop(0.1, backgroundColor);
-		gradient.addColorStop(0.9, backgroundColor);
-		gradient.addColorStop(1, fadeColor);
-
-		this._background = new Graphics();
-		this._background.alpha = 0.95;
-		this._background.rect(0, 0, width, height).fill(gradient);
-
-		this.addChild(this._background);
-	}
-
-	private createTableContainer(): void {
-		this._tableContainer = new Container();
-		this.addChild(this._tableContainer);
 	}
 
 	private createAllTextObjects(): void {

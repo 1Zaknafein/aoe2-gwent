@@ -22,6 +22,8 @@ export const options: LoaderOptions = {
 					old_paper: "./sprites/old_paper.png",
 					wood: "./sprites/wood_texture.png",
 					dirt: "./sprites/dirty_texture.png",
+					resolution_dialog_fill: "./sprites/resolution_dialog_fill.png",
+					resolution_dialog_header: "./sprites/resolution_dialog_header.png",
 
 					crossbowman: "./sprites/cards/card_faces/crossbowman.png",
 					knight: "./sprites/cards/card_faces/knight.png",
