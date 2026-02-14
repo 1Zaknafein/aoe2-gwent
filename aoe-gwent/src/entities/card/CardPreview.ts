@@ -1,4 +1,4 @@
-import { Container, Sprite, Text } from "pixi.js";
+import { Container, Sprite, Text, Texture } from "pixi.js";
 import gsap from "gsap";
 import {
 	CardDescriptions,
@@ -13,12 +13,14 @@ export class CardPreview extends Container {
 
 	private readonly _title: Text;
 	private readonly _score: Text;
-	private readonly _typeIcon: Sprite;
+	private readonly _icon: Sprite;
 
 	private readonly _border: Sprite;
 	private readonly _descriptionText: Text;
 
 	private _activeTween: GSAPAnimation | null = null;
+
+	private readonly _rowTypeIcons: Map<CardType, Texture>;
 
 	constructor() {
 		super();
@@ -29,6 +31,12 @@ export class CardPreview extends Container {
 			score: 1,
 			type: CardType.MELEE,
 		};
+
+		this._rowTypeIcons = new Map<CardType, Texture>([
+			[CardType.MELEE, Texture.from("icon_melee")],
+			[CardType.RANGED, Texture.from("icon_ranged")],
+			[CardType.SIEGE, Texture.from("icon_siege")],
+		]);
 
 		this.card = new Card(cardData);
 		this.card.scale.set(2);
@@ -52,13 +60,13 @@ export class CardPreview extends Container {
 
 		setFitWidth(this._title, 230, 30);
 
-		this._typeIcon = Sprite.from("icon_melee");
-		this._typeIcon.anchor.set(0.5);
-		this._typeIcon.scale.set(0.75);
-		this._typeIcon.tint = "#ffcc81";
+		this._icon = new Sprite(this._rowTypeIcons.get(CardType.MELEE));
+		this._icon.anchor.set(0.5);
+		this._icon.scale.set(0.7);
+		this._icon.tint = "#ffcc81";
 
-		this._typeIcon.x = 150;
-		this._typeIcon.y = 265;
+		this._icon.x = 150;
+		this._icon.y = 265;
 
 		this._score = new Text();
 		this._score.text = "19";
@@ -111,7 +119,7 @@ export class CardPreview extends Container {
 			this.card,
 			this._border,
 			this._title,
-			this._typeIcon,
+			this._icon,
 			this._score
 		);
 
@@ -157,6 +165,14 @@ export class CardPreview extends Container {
 		this._title.text = name;
 		this._title.style.fontSize = 30;
 		setFitWidth(this._title, 230, 30);
+
+		const texture = this._rowTypeIcons.get(this.card.cardData.type);
+
+		if (texture) {
+			this._icon.texture = texture;
+		} else {
+			this._icon.texture = Texture.EMPTY;
+		}
 
 		if (this.card.cardData.baseScore! > 0) {
 			this._score.text = this.card.cardData.baseScore!.toString();
