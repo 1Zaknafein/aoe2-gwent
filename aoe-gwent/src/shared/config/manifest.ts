@@ -16,6 +16,8 @@ export const options: LoaderOptions = {
 				assets: {
 					card_border: "./sprites/cards/card_border.png",
 					card_back: "./sprites/cards/card_back.png",
+					card_preview_border: "./sprites/cards/card_preview_border.png",
+
 					crossbowman: "./sprites/cards/card_faces/crossbowman.png",
 					knight: "./sprites/cards/card_faces/knight.png",
 					teutonic_knight: "./sprites/cards/card_faces/teutonic_knight.png",

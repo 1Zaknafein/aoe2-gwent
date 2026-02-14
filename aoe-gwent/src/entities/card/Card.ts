@@ -1,21 +1,20 @@
-import { Container, Graphics, Sprite, Text, TextStyle } from "pixi.js";
+import { Container, Sprite, Text, TextStyle } from "pixi.js";
 import gsap from "gsap";
-import { createRedButton } from "../../ui/components/CommonComponents.js";
 import { CardDatabase, CardData } from "../../local-server/CardDatabase.js";
 
 export class Card extends Container {
 	private _cardData: CardData;
 	private _cardBack!: Sprite;
 	private _cardFace!: Sprite;
-	private _scoreBackground?: Graphics;
+	private _cardBorder!: Sprite;
 	private _showingBack: boolean = false;
 	private _scoreText?: Text;
 
 	private static SCORE_TEXT_STYLE: Partial<TextStyle> = {
-		fontFamily: "Arial",
-		fontSize: 32,
+		fontFamily: "Cinzel, serif",
+		fontSize: 40,
 		fontWeight: "bold",
-		fill: "#ffe1c8ff",
+		fill: "#290e00",
 	};
 
 	constructor(cardData: CardData) {
@@ -52,23 +51,20 @@ export class Card extends Container {
 		this._cardFace.scale.set(0.5);
 		this.addChild(this._cardFace);
 
-		this._scoreBackground = createRedButton(40, 40);
-		this._scoreBackground.x = -this._cardBack.width / 2 + 10;
-		this._scoreBackground.y = -this._cardBack.height / 2 + 10;
-
-		this.addChild(this._scoreBackground);
+		this._cardBorder = Sprite.from("card_border");
+		this._cardBorder.anchor.set(0.5);
+		this._cardBorder.y = -3;
+		this.addChild(this._cardBorder);
 
 		this._scoreText = new Text({
 			text: this._cardData.score.toString(),
 			style: Card.SCORE_TEXT_STYLE,
+			anchor: 0.5,
+			x: -this._cardFace.width / 2 + 23,
+			y: -this._cardFace.height / 2 + 13,
 		});
 
-		this._scoreText.anchor.set(0.5);
-		this._scoreText.x = this._scoreBackground.x + 20;
-		this._scoreText.y = this._scoreBackground.y + 20;
-
 		if (this._cardData.score === 0) {
-			this._scoreBackground.visible = false;
 			this._scoreText.visible = false;
 		}
 
@@ -89,7 +85,7 @@ export class Card extends Container {
 
 	public hideDetails(): void {
 		this._scoreText!.visible = false;
-		this._scoreBackground!.visible = false;
+		this._cardBorder.visible = false;
 	}
 
 	/**
@@ -111,7 +107,6 @@ export class Card extends Container {
 		const showScore = this._cardData.score > 0;
 
 		this._scoreText!.visible = showScore;
-		this._scoreBackground!.visible = showScore;
 	}
 
 	/**
@@ -153,7 +148,7 @@ export class Card extends Container {
 		this._cardBack.visible = true;
 		this._cardFace.visible = false;
 		this._scoreText!.visible = false;
-		this._scoreBackground!.visible = false;
+		this._cardBorder.visible = false;
 	}
 
 	/**
@@ -164,6 +159,7 @@ export class Card extends Container {
 		this._showingBack = false;
 		this._cardBack.visible = false;
 		this._cardFace.visible = true;
+		this._cardBorder.visible = true;
 
 		this.updateShowingScore();
 	}

@@ -31,7 +31,7 @@ export class PlayingRowContainer extends CardContainer {
 			config.width - 200,
 			config.containerType,
 			CardContainerLayoutType.SPREAD,
-			0.5
+			0.52
 		);
 
 		this.config = config;
