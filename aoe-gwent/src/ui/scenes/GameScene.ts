@@ -49,9 +49,11 @@ export class GameScene extends PixiContainer implements SceneInterface {
 	public readonly playerDeck: Deck;
 	public readonly opponentDeck: Deck;
 
+	public darkOverlay: Graphics | null = null;
+
 	private readonly rowHeight = 140;
-	private readonly LEFT_MARGIN = 450;
-	private readonly RIGHT_MARGIN = 350;
+	private readonly leftMargin = 450;
+	private readonly rightMargin = 350;
 
 	constructor() {
 		super();
@@ -76,7 +78,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.bgRightGradient = this.createEdgeGradient("horizontal", true);
 
 		const centerX = this.boardWidth / 2;
-		const rowWidth = this.boardWidth - this.LEFT_MARGIN - this.RIGHT_MARGIN;
+		const rowWidth = this.boardWidth - this.leftMargin - this.rightMargin;
 
 		const helper = new GameSceneBuildHelper(this.rowHeight, rowWidth);
 
@@ -206,6 +208,13 @@ export class GameScene extends PixiContainer implements SceneInterface {
 
 		this.background.x = -offsetX / scale;
 		this.background.y = -offsetY / scale;
+
+		if (this.darkOverlay) {
+			this.darkOverlay.width = this.background.width;
+			this.darkOverlay.height = this.background.height;
+			this.darkOverlay.x = this.background.x;
+			this.darkOverlay.y = this.background.y;
+		}
 
 		this.backgroundImage.width = this.boardWidth;
 		this.backgroundImage.height = this.boardHeight;

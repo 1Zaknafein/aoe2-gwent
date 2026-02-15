@@ -4,6 +4,7 @@ import { MessageDisplay } from "../../../ui/components/MessageDisplay";
 import { GameResolutionDisplay } from "../../../ui/components/GameResolutionDisplay";
 import { PlayerDisplayManager } from "../../../entities/player";
 import { GameBoardInteractionManager } from "../../../ui/scenes/GameBoardInteractionManager";
+import { Graphics } from "pixi.js";
 
 /**
  * Enum for all possible game states
@@ -25,6 +26,7 @@ export abstract class State {
 	protected gameResolutionDisplay: GameResolutionDisplay;
 	protected playerDisplayManager: PlayerDisplayManager;
 	protected interactionManager: GameBoardInteractionManager;
+	protected darkOverlay: Graphics;
 
 	constructor(context: GameContext) {
 		this.gameManager = context.gameManager;
@@ -32,6 +34,7 @@ export abstract class State {
 		this.gameResolutionDisplay = context.gameResolutionDisplay;
 		this.playerDisplayManager = context.playerDisplayManager;
 		this.interactionManager = context.interactionManager;
+		this.darkOverlay = context.darkOverlay;
 	}
 
 	/**

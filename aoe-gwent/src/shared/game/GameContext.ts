@@ -6,6 +6,7 @@ import { GameBoardInteractionManager } from "../../ui/scenes/GameBoardInteractio
 import { Player } from "../../entities/player/Player";
 import { BotPlayer } from "../../local-server";
 import { GameScene } from "../../ui/scenes/GameScene";
+import { Graphics } from "pixi.js";
 
 /**
  * GameContext - Container for all dependencies that states may need
@@ -19,4 +20,5 @@ export interface GameContext {
 	interactionManager: GameBoardInteractionManager;
 	player: Player;
 	enemy: BotPlayer;
+	darkOverlay: Graphics;
 }

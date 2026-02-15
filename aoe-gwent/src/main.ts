@@ -25,6 +25,7 @@ import {
 	PlayerDisplayManager,
 	PlayerDisplayManagerConfig,
 } from "./entities/player";
+import { Graphics } from "pixi.js";
 
 const boostsrap = async () => {
 	const appOptions: Partial<IPixiApplicationOptions> = {
@@ -99,6 +100,21 @@ const boostsrap = async () => {
 
 			gameScene.on("pointerup", () => interactionManager.handleGlobalClick());
 
+			const darkOverlay = new Graphics();
+			darkOverlay.label = "darkOverlay";
+			darkOverlay.rect(0, 0, 1, 1);
+			darkOverlay.fill({ color: "black", alpha: 1 });
+			darkOverlay.eventMode = "none";
+			darkOverlay.visible = false;
+			darkOverlay.alpha = 0;
+
+			darkOverlay.width = gameScene.background.width;
+			darkOverlay.height = gameScene.background.height;
+			darkOverlay.x = gameScene.background.x;
+			darkOverlay.y = gameScene.background.y;
+
+			gameScene.gameBoard.addChild(darkOverlay);
+
 			const gameManager = new GameManager(player, enemy, playerDisplayManager);
 
 			const messageDisplay = new MessageDisplay({});
@@ -115,6 +131,9 @@ const boostsrap = async () => {
 			gameResolutionDisplay.y = gameScene.boardHeight / 2;
 			gameScene.gameBoard.addChild(gameResolutionDisplay);
 
+			// Need to have a hook for screen resizes.
+			gameScene.darkOverlay = darkOverlay;
+
 			const context: GameContext = {
 				gameManager,
 				gameScene,
@@ -124,6 +143,7 @@ const boostsrap = async () => {
 				interactionManager,
 				player,
 				enemy,
+				darkOverlay,
 			};
 
 			// prettier-ignore
