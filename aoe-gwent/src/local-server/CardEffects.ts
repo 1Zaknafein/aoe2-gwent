@@ -1,4 +1,4 @@
-import { Card } from "../entities/card";
+import { Card, PlayingRowContainer } from "../entities/card";
 import { Player } from "../entities/player/Player";
 
 export interface BattlefieldContext {
@@ -27,7 +27,10 @@ export type SelfEffectFunction = (
 /**
  * Effect that modifies other cards (aura/passive effect)
  */
-export type AuraEffectFunction = (context: BattlefieldContext) => void;
+export type AuraEffectFunction = (context: BattlefieldContext) => {
+	affectedRow: PlayingRowContainer;
+	effectValue: number;
+};
 
 /**
  * Effect that triggers when card is played
@@ -41,7 +44,6 @@ export const SelfEffects = {
 	/**
 	 * Monaspa: Gains +1 strength for each other Monaspa or Knight in same melee row
 	 */
-
 	monaspaBonus: {
 		id: "monaspa_bonus",
 		description:
@@ -53,17 +55,16 @@ export const SelfEffects = {
 					card !== c &&
 					(c.cardData.name === "Monaspa" || c.cardData.name === "Knight")
 			);
-			return card.cardData.score + bonusCards.length;
+			return bonusCards.length;
 		},
 	} as EffectMetadata<SelfEffectFunction>,
 
 	wingedHussarBonus: {
 		id: "winged_hussar_bonus",
 		description: "Gains 2 strength if there are any enemy siege units.",
-		fn: (card: Card, context: BattlefieldContext): number => {
+		fn: (_: Card, context: BattlefieldContext): number => {
 			const enemySiegeCount = context.enemy.siege.cards.length;
-			const score = card.cardData.score;
-			return enemySiegeCount > 0 ? score + 2 : score;
+			return enemySiegeCount > 0 ? 2 : 0;
 		},
 	} as EffectMetadata<SelfEffectFunction>,
 
@@ -73,10 +74,10 @@ export const SelfEffects = {
 	skirmisherBonus: {
 		id: "skirmisher_bonus",
 		description: "Gains 2 strength if there are any enemy ranged units.",
-		fn: (card: Card, context: BattlefieldContext): number => {
+		fn: (_: Card, context: BattlefieldContext): number => {
 			const enemyRangedCount = context.enemy.ranged.cards.length;
-			const score = card.cardData.score;
-			return enemyRangedCount > 0 ? score + 2 : score;
+
+			return enemyRangedCount > 0 ? 2 : 0;
 		},
 	} as EffectMetadata<SelfEffectFunction>,
 
@@ -87,7 +88,7 @@ export const SelfEffects = {
 		id: "pikeman_bonus",
 		description:
 			"Gains 2 strength if there are any enemy cavalry units in melee row.",
-		fn: (card: Card, context: BattlefieldContext): number => {
+		fn: (_: Card, context: BattlefieldContext): number => {
 			const enemyMeleeCards = context.enemy.melee.cards;
 
 			let bonusScore = 0;
@@ -99,15 +100,13 @@ export const SelfEffects = {
 				}
 			}
 
-			const score = card.cardData.score + bonusScore;
-
-			return score;
+			return bonusScore;
 		},
 	} as EffectMetadata<SelfEffectFunction>,
 };
 
 /**
- * Aura effects - cards that affect other cards
+ * Aura effects - cards that affect whole rows.
  */
 export const AuraEffects = {
 	/**
@@ -117,50 +116,10 @@ export const AuraEffects = {
 		id: "obuch_debuff",
 		description: "Decreases strength of all enemy melee units by 1.",
 		fn: (context: BattlefieldContext) => {
-			context.enemy.melee.cards.forEach((card) => {
-				const cardScore = card.cardData.score;
-				const newScore = Math.max(1, cardScore - 1);
-				card.setScore(newScore);
-			});
-		},
-	} as EffectMetadata<AuraEffectFunction>,
-
-	/**
-	 * Freeze: Decreases strength of all melee units to 1
-	 */
-	freezeEffect: {
-		id: "freeze_effect",
-		description: "Reduces strength of all melee units to 1.",
-		fn: (context: BattlefieldContext) => {
-			const meleeRows = [context.enemy.melee, context.player.melee];
-
-			meleeRows.forEach((row) => row.applyWeatherEffect());
-		},
-	} as EffectMetadata<AuraEffectFunction>,
-
-	/**
-	 * Fog: Decreases strength of all ranged units to 1
-	 */
-	fogEffect: {
-		id: "fog_effect",
-		description: "Reduces strength of all ranged units to 1.",
-		fn: (context: BattlefieldContext) => {
-			const rangedRows = [context.enemy.ranged, context.player.ranged];
-
-			rangedRows.forEach((row) => row.applyWeatherEffect());
-		},
-	} as EffectMetadata<AuraEffectFunction>,
-
-	/**
-	 * Rain: Decreases strength of all siege units to 1
-	 */
-	rainEffect: {
-		id: "rain_effect",
-		description: "Reduces strength of all siege units to 1.",
-		fn: (context: BattlefieldContext) => {
-			const siegeRows = [context.enemy.siege, context.player.siege];
-
-			siegeRows.forEach((row) => row.applyWeatherEffect());
+			return {
+				affectedRow: context.enemy.melee,
+				effectValue: -1,
+			};
 		},
 	} as EffectMetadata<AuraEffectFunction>,
 };
@@ -198,16 +157,52 @@ export const TriggerEffects = {
 	clearEffect: {
 		id: "clear_effect",
 		description: "Removes all weather effects from the battlefield.",
-		fn: (context: BattlefieldContext) => {
-			const { player, enemy } = context;
+		fn: (context: BattlefieldContext): void => {
+			context.player.melee.clearWeatherEffect();
+			context.player.ranged.clearWeatherEffect();
+			context.player.siege.clearWeatherEffect();
+			context.enemy.melee.clearWeatherEffect();
+			context.enemy.ranged.clearWeatherEffect();
+			context.enemy.siege.clearWeatherEffect();
 
-			player.melee.clearWeatherEffect();
-			player.ranged.clearWeatherEffect();
-			player.siege.clearWeatherEffect();
+			// Weather container is same for player and enemy.
+			context.player.weather.removeAllCards();
+		},
+	},
 
-			enemy.melee.clearWeatherEffect();
-			enemy.ranged.clearWeatherEffect();
-			enemy.siege.clearWeatherEffect();
+	/**
+	 * Freeze: Decreases strength of all melee units to 1
+	 */
+	freezeEffect: {
+		id: "freeze_effect",
+		description: "Reduces strength of all melee units to 1.",
+		fn: (context: BattlefieldContext): void => {
+			context.player.melee.applyWeatherEffect();
+			context.enemy.melee.applyWeatherEffect();
+		},
+	},
+
+	/**
+	 * Fog: Decreases strength of all ranged units to 1
+	 */
+	fogEffect: {
+		id: "fog_effect",
+		description: "Reduces strength of all ranged units to 1.",
+		fn: (context: BattlefieldContext): void => {
+			context.player.ranged.applyWeatherEffect();
+			context.enemy.ranged.applyWeatherEffect();
+		},
+	},
+
+	/**
+	 * Rain: Decreases strength of all siege units to 1
+	 */
+	rainEffect: {
+		id: "rain_effect",
+		description: "Reduces strength of all siege units to 1.",
+		fn: (context: BattlefieldContext): void => {
+			context.player.siege.applyWeatherEffect();
+			context.enemy.siege.applyWeatherEffect();
 		},
 	},
 };

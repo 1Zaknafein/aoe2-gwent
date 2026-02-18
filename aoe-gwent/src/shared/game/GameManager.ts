@@ -4,7 +4,6 @@ import {
 	CardType,
 	PlayingRowContainer,
 } from "../../entities/card";
-import { WeatherRowContainer } from "../../entities/card/WeatherRowContainer";
 import { PlayerDisplayManager } from "../../entities/player";
 import { Player } from "../../entities/player/Player";
 import { CardDatabase, GamePhase } from "../../local-server";
@@ -14,6 +13,7 @@ import {
 	PlayerAction,
 } from "../../local-server/GameTypes";
 import { PlayerID } from "../types";
+import { ScoreCalculator } from "./ScoreCalculator";
 
 /**
  * Handles what's happening during game.
@@ -32,6 +32,8 @@ export class GameManager {
 
 	private readonly _maxRounds = 3;
 
+	private readonly _scoreCalculator: ScoreCalculator;
+
 	constructor(
 		player: Player,
 		enemy: Player,
@@ -41,6 +43,7 @@ export class GameManager {
 		this._enemy = enemy;
 
 		this._playerDisplayManager = playerDisplayManager;
+		this._scoreCalculator = new ScoreCalculator(player, enemy);
 
 		this.gameData = {
 			phase: GamePhase.WAITING_FOR_ROUND_START,
@@ -77,8 +80,8 @@ export class GameManager {
 		this._roundsWonMap.set(this._player.id, 0);
 		this._roundsWonMap.set(this._enemy.id, 0);
 
-		this._player.hand.addCardsBatch(this._player.deck.splice(0, 2));
-		this._enemy.hand.addCardsBatch(this._enemy.deck.splice(0, 2));
+		this._player.hand.addCardsBatch(this._player.deck.splice(0, 10));
+		this._enemy.hand.addCardsBatch(this._enemy.deck.splice(0, 10));
 		this._enemy.hand.hideCards();
 
 		this._playerDisplayManager.playerDisplay.setRoundWins(0);
@@ -216,7 +219,6 @@ export class GameManager {
 	}
 
 	private async handlePlaceCardAction(action: PlayerAction): Promise<void> {
-		// TODO Handle cards with special effects (eg. weather cards, summoning cards, etc.)
 		const { player, card, targetRow } = action;
 
 		if (!card || !targetRow) {
@@ -232,16 +234,16 @@ export class GameManager {
 
 		await player.hand.transferCardTo(card, targetRow);
 
-		if (
-			card.cardData.type === CardType.WEATHER &&
-			targetRow instanceof WeatherRowContainer
-		) {
-			this.handleWeatherEffect(card);
+		// Handle one-off effects (weather etc) before calculating score.
+		if (card.cardData.onPlayEffect) {
+			card.cardData.onPlayEffect.fn({
+				player: this._player,
+				enemy: this._enemy,
+			});
 		}
 
-		// New cards can affect both player and enemy scores, so update both.
-		this._player.updateScore();
-		this._enemy.updateScore();
+		// Calculate score for all cards, as some cards can affect multiple cards' scores.
+		this._scoreCalculator.calculateScore();
 
 		const otherPlayer =
 			player.id === this._player.id ? this._enemy : this._player;
@@ -267,49 +269,24 @@ export class GameManager {
 		}
 	}
 
-	private handleWeatherEffect(weatherCard: Card): void {
-		const effect = weatherCard.cardData.effect;
-
-		if (!effect) {
-			throw new Error("Weather card missing effect data");
-		}
-
-		switch (effect) {
-			case CardEffect.FREEZE:
-				this._player.melee.applyWeatherEffect();
-				this._enemy.melee.applyWeatherEffect();
-				break;
-			case CardEffect.FOG:
-				this._player.ranged.applyWeatherEffect();
-				this._enemy.ranged.applyWeatherEffect();
-				break;
-			case CardEffect.RAIN:
-				this._player.siege.applyWeatherEffect();
-				this._enemy.siege.applyWeatherEffect();
-				break;
-			case CardEffect.CLEAR:
-				for (const row of this._allPlayingRowContainers) {
-					row.clearWeatherEffect();
-				}
-				this._player.weather.removeAllCards();
-				break;
-		}
-	}
-
-	private removeCardsFromBoard(): void {
+	private async removeCardsFromBoard(): Promise<void> {
 		this._player.weather.removeAllCards();
 
 		for (const rowContainer of this._allPlayingRowContainers) {
 			rowContainer.clearWeatherEffect();
 		}
 
-		this._player.melee.transferAllCardsTo(this._player.discarded);
-		this._enemy.melee.transferAllCardsTo(this._enemy.discarded);
+		await Promise.all([
+			this._player.melee.transferAllCardsTo(this._player.discarded),
+			this._player.ranged.transferAllCardsTo(this._player.discarded),
+			this._player.siege.transferAllCardsTo(this._player.discarded),
 
-		this._player.ranged.transferAllCardsTo(this._player.discarded);
-		this._enemy.ranged.transferAllCardsTo(this._enemy.discarded);
+			this._enemy.melee.transferAllCardsTo(this._enemy.discarded),
+			this._enemy.ranged.transferAllCardsTo(this._enemy.discarded),
+			this._enemy.siege.transferAllCardsTo(this._enemy.discarded),
+		]);
 
-		this._player.siege.transferAllCardsTo(this._player.discarded);
-		this._enemy.siege.transferAllCardsTo(this._enemy.discarded);
+		this._player.updateScore();
+		this._enemy.updateScore();
 	}
 }

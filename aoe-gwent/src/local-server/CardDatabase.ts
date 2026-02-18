@@ -47,8 +47,10 @@ export interface CardData {
  * Local card database that stores card definitions.
  */
 export class CardDatabase {
-	public static getCardById(id: number): CardData | undefined {
-		return this.cards.find((card) => card.id === id);
+	public static getCardDataById(id: number): CardData | undefined {
+		return { ...this.cards.find((card) => card.id === id) } as
+			| CardData
+			| undefined;
 	}
 
 	public static generateRandomDeck(size: number): CardData[] {
@@ -58,7 +60,7 @@ export class CardDatabase {
 			const randomCardData =
 				this.cards[Math.floor(Math.random() * this.cards.length)];
 
-			deck.push(randomCardData);
+			deck.push({ ...randomCardData });
 		}
 
 		return deck;
@@ -225,7 +227,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.FREEZE,
-			auraEffect: AuraEffects.freezeEffect,
+			onPlayEffect: TriggerEffects.freezeEffect,
 		},
 		{
 			id: 102,
@@ -233,7 +235,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.FOG,
-			auraEffect: AuraEffects.fogEffect,
+			onPlayEffect: TriggerEffects.fogEffect,
 		},
 		{
 			id: 103,
@@ -241,7 +243,7 @@ export class CardDatabase {
 			score: 0,
 			type: CardType.WEATHER,
 			effect: CardEffect.RAIN,
-			auraEffect: AuraEffects.rainEffect,
+			onPlayEffect: TriggerEffects.rainEffect,
 		},
 		{
 			id: 104,

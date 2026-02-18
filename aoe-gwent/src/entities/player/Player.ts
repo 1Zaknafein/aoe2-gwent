@@ -38,6 +38,10 @@ export class Player {
 	}
 
 	public updateScore(): void {
+		this.melee.updateScore();
+		this.ranged.updateScore();
+		this.siege.updateScore();
+
 		this.score = this.melee.score + this.ranged.score + this.siege.score;
 	}
 
