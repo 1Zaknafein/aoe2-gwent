@@ -83,13 +83,22 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		const helper = new GameSceneBuildHelper(this.rowHeight, rowWidth);
 
 		// Enemy rows
-		this.opponentSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
+		this.opponentSiegeRow = helper.createPlayingRowContainer(
+			CardType.SIEGE,
+			"opponent_siege_row"
+		);
 		this.opponentSiegeRow.position.set(centerX, 280);
 
-		this.opponentRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
+		this.opponentRangedRow = helper.createPlayingRowContainer(
+			CardType.RANGED,
+			"opponent_ranged_row"
+		);
 		this.opponentRangedRow.position.set(centerX, 430);
 
-		this.opponentMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
+		this.opponentMeleeRow = helper.createPlayingRowContainer(
+			CardType.MELEE,
+			"opponent_melee_row"
+		);
 		this.opponentMeleeRow.position.set(centerX, 580);
 
 		this.opponentDiscard = helper.createDiscardPile();
@@ -100,13 +109,22 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		this.opponentDeck.scale.set(0.75);
 
 		// Player rows
-		this.playerMeleeRow = helper.createPlayingRowContainer(CardType.MELEE);
+		this.playerMeleeRow = helper.createPlayingRowContainer(
+			CardType.MELEE,
+			"player_melee_row"
+		);
 		this.playerMeleeRow.position.set(centerX, 770);
 
-		this.playerRangedRow = helper.createPlayingRowContainer(CardType.RANGED);
+		this.playerRangedRow = helper.createPlayingRowContainer(
+			CardType.RANGED,
+			"player_ranged_row"
+		);
 		this.playerRangedRow.position.set(centerX, 920);
 
-		this.playerSiegeRow = helper.createPlayingRowContainer(CardType.SIEGE);
+		this.playerSiegeRow = helper.createPlayingRowContainer(
+			CardType.SIEGE,
+			"player_siege_row"
+		);
 		this.playerSiegeRow.position.set(centerX, 1070);
 
 		this.opponentHand = helper.createHandContainer(false);
@@ -127,6 +145,7 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		const divider = helper.createDivider(centerX, dividerY, centerX);
 
 		this.weatherRow = new WeatherRowContainer({
+			label: "weather_row",
 			containerType: CardType.WEATHER,
 			width: 350,
 			height: this.rowHeight,

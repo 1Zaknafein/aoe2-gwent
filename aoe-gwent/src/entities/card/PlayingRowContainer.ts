@@ -7,6 +7,7 @@ import { CardEffect, CardType } from "../../local-server/CardDatabase";
 import { BorderDialog } from "../../ui/components/BorderDialog";
 
 export interface PlayingRowConfig {
+	label: string;
 	width: number;
 	height: number;
 	labelColor: number;
@@ -35,6 +36,7 @@ export class PlayingRowContainer extends CardContainer {
 			0.52
 		);
 
+		this.label = config.label;
 		this.config = config;
 
 		this.rowBackground = new BorderDialog(config.width, config.height);
@@ -79,13 +81,12 @@ export class PlayingRowContainer extends CardContainer {
 		this.setCardsInteractive(false);
 
 		this.on("cardAdded", () => {
-			this.updateScore();
 			this.setChildIndex(this.weatherEffect, this.children.length - 1);
 		});
+	}
 
-		this.on("cardRemoved", () => {
-			this.updateScore();
-		});
+	public get weatherEffectApplied(): boolean {
+		return this._weatherEffectApplied;
 	}
 
 	/**
@@ -119,19 +120,9 @@ export class PlayingRowContainer extends CardContainer {
 	 * Update the score display based on cards in the row
 	 */
 	public updateScore(): void {
-		let newScore = 0;
-
-		this.getAllCards().forEach((card) => {
-			let cardScore = card.cardData.baseScore || card.cardData.score;
-
-			// Weather causes all unit cards to have score 1.
-			if (this._weatherEffectApplied) {
-				cardScore = 1;
-			}
-
-			card.setScore(cardScore);
-			newScore += cardScore;
-		});
+		const newScore = this.cards.reduce((score, card) => {
+			return score + card.cardData.score;
+		}, 0);
 
 		this.scoreText.text = newScore.toString();
 		this._score = newScore;
@@ -152,8 +143,6 @@ export class PlayingRowContainer extends CardContainer {
 	public applyWeatherEffect(): void {
 		this.weatherEffect.show();
 		this._weatherEffectApplied = true;
-
-		this.updateScore();
 	}
 
 	/**
@@ -162,8 +151,6 @@ export class PlayingRowContainer extends CardContainer {
 	public clearWeatherEffect(): void {
 		this.weatherEffect.hide();
 		this._weatherEffectApplied = false;
-
-		this.updateScore();
 	}
 
 	private createHighlight(): PixiGraphics {

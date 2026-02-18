@@ -19,13 +19,15 @@ export class GameSceneBuildHelper {
 	}
 
 	public createPlayingRowContainer(
-		containerType: CardType
+		containerType: CardType,
+		label: string
 	): PlayingRowContainer {
 		return new PlayingRowContainer({
 			width: this._rowWidth,
 			height: this._rowHeight,
 			labelColor: this._labelColor,
 			containerType,
+			label,
 		});
 	}
 
