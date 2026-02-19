@@ -221,6 +221,21 @@ export class CardDatabase {
 			tags: ["cavalry"],
 			selfEffect: SelfEffects.wingedHussarBonus,
 		},
+
+		{
+			id: 20,
+			name: "Eagle Warrior",
+			score: 4,
+			type: CardType.MELEE,
+			tags: ["infantry"],
+		},
+		{
+			id: 21,
+			name: "Woad Raider",
+			score: 5,
+			type: CardType.MELEE,
+			tags: ["infantry"],
+		},
 		{
 			id: 101,
 			name: "Frost",
