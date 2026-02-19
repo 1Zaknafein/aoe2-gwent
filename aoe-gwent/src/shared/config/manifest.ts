@@ -45,6 +45,8 @@ export const options: LoaderOptions = {
 					skirmisher: "./sprites/cards/card_faces/skirmisher.png",
 					elite_skirmisher: "./sprites/cards/card_faces/elite_skirmisher.png",
 					winged_hussar: "./sprites/cards/card_faces/winged_hussar.png",
+					eagle_warrior: "./sprites/cards/card_faces/eagle_warrior.png",
+					woad_raider: "./sprites/cards/card_faces/woad_raider.png",
 
 					icon_melee: "./sprites/cards/icon_melee.png",
 					icon_ranged: "./sprites/cards/icon_ranged.png",
