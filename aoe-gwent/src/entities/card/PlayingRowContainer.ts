@@ -1,11 +1,11 @@
+import { gsap } from "gsap";
+import { BloomFilter } from "pixi-filters";
 import { Container, Graphics, Sprite, Text, TextStyle } from "pixi.js";
+import { CardEffect, CardType } from "../../local-server/CardDatabase";
 import { PixiGraphics, PixiSprite } from "../../plugins/engine";
+import { BorderDialog } from "../../ui/components/BorderDialog";
 import { CardContainer, CardContainerLayoutType } from "./CardContainer";
 import { WeatherEffect } from "./WeatherEffect";
-import { gsap } from "gsap";
-import { CardEffect, CardType } from "../../local-server/CardDatabase";
-import { BorderDialog } from "../../ui/components/BorderDialog";
-import { BloomFilter } from "pixi-filters";
 
 export interface PlayingRowConfig {
 	label: string;
@@ -19,6 +19,9 @@ export interface PlayingRowConfig {
  * Specialized container for playing rows (Melee, Ranged, Siege).
  */
 export class PlayingRowContainer extends CardContainer {
+	public weatherEffectApplied = false;
+	public strengthBoost = 0;
+
 	private rowBackground: Container;
 	private highlightOverlay: Graphics;
 	private weatherEffect: WeatherEffect;
@@ -29,9 +32,6 @@ export class PlayingRowContainer extends CardContainer {
 	private bloomFilter: BloomFilter;
 
 	private _score = 0;
-	private _weatherEffectApplied = false;
-
-	private _strengthBoost = 0;
 
 	constructor(config: PlayingRowConfig) {
 		super(
@@ -95,14 +95,6 @@ export class PlayingRowContainer extends CardContainer {
 		});
 	}
 
-	public get weatherEffectApplied(): boolean {
-		return this._weatherEffectApplied;
-	}
-
-	public get strengthBoost(): number {
-		return this._strengthBoost;
-	}
-
 	/**
 	 * Show the highlight overlay
 	 */
@@ -155,7 +147,7 @@ export class PlayingRowContainer extends CardContainer {
 	 * Apply weather effect overlay to the row
 	 */
 	public async applyWeatherEffect(): Promise<void> {
-		this._weatherEffectApplied = true;
+		this.weatherEffectApplied = true;
 		await this.weatherEffect.show();
 	}
 
@@ -164,15 +156,15 @@ export class PlayingRowContainer extends CardContainer {
 	 */
 	public async clearWeatherEffect(): Promise<void> {
 		await this.weatherEffect.hide();
-		this._weatherEffectApplied = false;
+		this.weatherEffectApplied = false;
 	}
 
 	public async applyStrengthBoost(boostAmount: 1 | 2 | 3): Promise<void> {
-		if (this._strengthBoost >= boostAmount) {
+		if (this.strengthBoost >= boostAmount) {
 			return;
 		}
 
-		this._strengthBoost = boostAmount;
+		this.strengthBoost = boostAmount;
 
 		const extraAlpha = 0.2 * boostAmount;
 
@@ -196,7 +188,7 @@ export class PlayingRowContainer extends CardContainer {
 	}
 
 	public async clearStrengthBoost(): Promise<void> {
-		this._strengthBoost = 0;
+		this.strengthBoost = 0;
 
 		this.typeIcon.tint = 0xffffff;
 		this.typeIcon.alpha = 0.3;

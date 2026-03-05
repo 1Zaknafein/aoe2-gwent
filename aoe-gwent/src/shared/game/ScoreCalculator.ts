@@ -1,172 +1,118 @@
 import { Card, PlayingRowContainer } from "../../entities/card";
-import { Player } from "../../entities/player/Player";
 import { BattlefieldContext } from "../../local-server/CardEffects";
 
 export class ScoreCalculator {
-	private readonly _player: Player;
-	private readonly _enemy: Player;
+	private readonly _cardScoreMap: {
+		player: Map<Card, number>;
+		enemy: Map<Card, number>;
+	} = {
+		player: new Map(),
+		enemy: new Map(),
+	};
 
-	private readonly _rowBuffMap: Map<PlayingRowContainer, number>;
+	public calculateScore(context: BattlefieldContext): {
+		player: Map<Card, number>;
+		enemy: Map<Card, number>;
+	} {
+		const swappedContext: BattlefieldContext = {
+			player: context.enemy,
+			enemy: context.player,
+		};
 
-	constructor(player: Player, enemy: Player) {
-		this._player = player;
-		this._enemy = enemy;
-		this._rowBuffMap = new Map();
-	}
-
-	public calculateScore(): void {
 		const playerRows = [
-			this._player.melee,
-			this._player.ranged,
-			this._player.siege,
+			context.player.melee,
+			context.player.ranged,
+			context.player.siege,
 		];
 		const enemyRows = [
-			this._enemy.melee,
-			this._enemy.ranged,
-			this._enemy.siege,
+			context.enemy.melee,
+			context.enemy.ranged,
+			context.enemy.siege,
 		];
 
-		const allRows = [...playerRows, ...enemyRows];
+		this._cardScoreMap.player.clear();
+		this._cardScoreMap.enemy.clear();
 
-		// Reset scores to base values before applying any effects.
-		for (const row of allRows) {
-			const hasWeatherEffect =
-				row instanceof PlayingRowContainer && row.weatherEffectApplied;
+		this.initBaseScores(playerRows, this._cardScoreMap.player);
+		this.initBaseScores(enemyRows, this._cardScoreMap.enemy);
 
+		this.applyAuraEffects(playerRows, context);
+		this.applyAuraEffects(enemyRows, swappedContext);
+
+		this.applySelfEffects(playerRows, context, this._cardScoreMap.player);
+		this.applySelfEffects(enemyRows, swappedContext, this._cardScoreMap.enemy);
+
+		return {
+			player: this._cardScoreMap.player,
+			enemy: this._cardScoreMap.enemy,
+		};
+	}
+
+	private initBaseScores(
+		rows: PlayingRowContainer[],
+		scoreMap: Map<Card, number>
+	): void {
+		for (const row of rows) {
 			for (const card of row.cards) {
 				if (card.cardData.baseScore === undefined) {
 					throw new Error(`Card ${card.cardData.name} is missing baseScore!`);
 				}
 
-				// We can apply weather effects here.
-				if (hasWeatherEffect) {
-					card.setScore(1);
-				} else {
-					card.setScore(card.cardData.baseScore);
-				}
+				scoreMap.set(
+					card,
+					row.weatherEffectApplied ? 1 : card.cardData.baseScore
+				);
 			}
 		}
-
-		// Calculate aura effects.
-		const effects = this.calculateAuraEffects(playerRows, enemyRows);
-
-		this._rowBuffMap.clear();
-
-		// Sum up buffs/debuffs from all aura effects for each row.
-		effects.forEach((effect) => {
-			const currentValue = this._rowBuffMap.get(effect.affectedRow) ?? 0;
-
-			this._rowBuffMap.set(
-				effect.affectedRow,
-				currentValue + effect.effectValue
-			);
-		});
-
-		// Apply row buffs/debuffs from aura effects to the cards.
-		this._rowBuffMap.forEach((buffAmount, row) => {
-			for (const card of row.cards) {
-				const newScore = card.cardData.score + buffAmount;
-				card.setScore(Math.max(newScore, 1));
-			}
-		});
-
-		// Apply card score for player rows.
-		for (const row of playerRows) {
-			for (const card of row.cards) {
-				card.setScore(this.calculateCardScore(card, true));
-			}
-		}
-
-		// Apply card score for enemy rows.
-		for (const row of enemyRows) {
-			for (const card of row.cards) {
-				card.setScore(this.calculateCardScore(card, false));
-			}
-		}
-
-		this._player.updateScore();
-		this._enemy.updateScore();
 	}
 
-	private calculateCardScore(card: Card, isPlayer: boolean): number {
-		const data = card.cardData;
+	private applyAuraEffects(
+		rows: PlayingRowContainer[],
+		context: BattlefieldContext
+	): void {
+		const rowBuffMap = new Map<PlayingRowContainer, number>();
 
-		const context: BattlefieldContext = {
-			player: isPlayer ? this._player : this._enemy,
-			enemy: isPlayer ? this._enemy : this._player,
-		};
+		for (const row of rows) {
+			if (row.strengthBoost) {
+				rowBuffMap.set(row, (rowBuffMap.get(row) ?? 0) + row.strengthBoost);
+			}
 
-		let newScore = data.score;
+			for (const card of row.cards) {
+				const effect = card.cardData.auraEffect?.fn(context);
 
-		if (data.selfEffect) {
-			newScore += data.selfEffect.fn(card, context);
+				if (effect) {
+					rowBuffMap.set(
+						effect.row,
+						(rowBuffMap.get(effect.row) ?? 0) + effect.value
+					);
+				}
+			}
 		}
 
-		return newScore;
+		// Apply accumulated buffs/debuffs. Look up the card in both maps since aura
+		// effects can target the opposite side's rows.
+		rowBuffMap.forEach((buffAmount, row) => {
+			for (const card of row.cards) {
+				const scoreMap = this._cardScoreMap.player.has(card)
+					? this._cardScoreMap.player
+					: this._cardScoreMap.enemy;
+
+				const oldScore = scoreMap.get(card)!;
+				scoreMap.set(card, Math.max(oldScore + buffAmount, 1));
+			}
+		});
 	}
 
-	private calculateAuraEffects(
-		playerRows: PlayingRowContainer[],
-		enemyRows: PlayingRowContainer[]
-	): {
-		affectedRow: PlayingRowContainer;
-		effectValue: number;
-	}[] {
-		const contextPlayer: BattlefieldContext = {
-			player: this._player,
-			enemy: this._enemy,
-		};
-
-		const contextEnemy: BattlefieldContext = {
-			player: this._enemy,
-			enemy: this._player,
-		};
-
-		let effects: {
-			affectedRow: PlayingRowContainer;
-			effectValue: number;
-		}[] = [];
-
-		for (const row of playerRows) {
-			if (row.strengthBoost) {
-				effects.push({
-					affectedRow: row,
-					effectValue: row.strengthBoost,
-				});
-			}
-
+	private applySelfEffects(
+		rows: PlayingRowContainer[],
+		context: BattlefieldContext,
+		scoreMap: Map<Card, number>
+	): void {
+		for (const row of rows) {
 			for (const card of row.cards) {
-				const effect = card.cardData.auraEffect?.fn(contextPlayer);
-
-				if (effect) {
-					effects.push({
-						affectedRow: effect.affectedRow,
-						effectValue: effect.effectValue,
-					});
-				}
+				const bonus = card.cardData.selfEffect?.fn(card, context) ?? 0;
+				scoreMap.set(card, scoreMap.get(card)! + bonus);
 			}
 		}
-
-		for (const row of enemyRows) {
-			if (row.strengthBoost) {
-				effects.push({
-					affectedRow: row,
-					effectValue: row.strengthBoost,
-				});
-			}
-
-			for (const card of row.cards) {
-				const effect = card.cardData.auraEffect?.fn(contextEnemy);
-
-				if (effect) {
-					effects.push({
-						affectedRow: effect.affectedRow,
-						effectValue: effect.effectValue,
-					});
-				}
-			}
-		}
-
-		return effects;
 	}
 }

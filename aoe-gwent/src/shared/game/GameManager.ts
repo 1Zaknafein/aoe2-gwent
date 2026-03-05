@@ -1,7 +1,13 @@
-import { CardEffect, PlayingRowContainer } from "../../entities/card";
+import {
+	CardData,
+	CardEffect,
+	CardType,
+	PlayingRowContainer,
+} from "../../entities/card";
 import { PlayerDisplayManager } from "../../entities/player";
 import { Player } from "../../entities/player/Player";
 import { CardDatabase, GamePhase } from "../../local-server";
+import { AuraEffects } from "../../local-server/CardEffects";
 import {
 	ActionType,
 	GameData,
@@ -38,7 +44,7 @@ export class GameManager {
 		this._enemy = enemy;
 
 		this._playerDisplayManager = playerDisplayManager;
-		this._scoreCalculator = new ScoreCalculator(player, enemy);
+		this._scoreCalculator = new ScoreCalculator();
 
 		this.gameData = {
 			phase: GamePhase.WAITING_FOR_ROUND_START,
@@ -233,19 +239,48 @@ export class GameManager {
 			action.player.hand.removeCard(card);
 		}
 
+		const oppositePlayer =
+			player.id === this._player.id ? this._enemy : this._player;
+
+		const context = {
+			player: {
+				melee: action.player.melee,
+				ranged: action.player.ranged,
+				siege: action.player.siege,
+				weather: action.player.weather,
+				hand: action.player.hand,
+				deck: action.player.deck,
+				deckPosition: action.player.deckPosition,
+			},
+			enemy: {
+				melee: oppositePlayer.melee,
+				ranged: oppositePlayer.ranged,
+				siege: oppositePlayer.siege,
+				weather: oppositePlayer.weather,
+				hand: oppositePlayer.hand,
+				deck: oppositePlayer.deck,
+				deckPosition: oppositePlayer.deckPosition,
+			},
+		};
+
 		// Handle one-off effects (weather etc) before calculating score.
 		if (card.cardData.onPlayEffect) {
-			const context = {
-				player: action.player,
-				enemy:
-					action.player.id === this._player.id ? this._enemy : this._player,
-			};
-
 			await card.cardData.onPlayEffect.fn(context);
 		}
 
 		// Calculate score for all cards, as some cards can affect multiple cards' scores.
-		this._scoreCalculator.calculateScore();
+		const updatedScores = this._scoreCalculator.calculateScore(context);
+
+		updatedScores.player.forEach((score, card) => {
+			card.setScore(score);
+		});
+
+		updatedScores.enemy.forEach((score, card) => {
+			card.setScore(score);
+		});
+
+		this._player.updateScore();
+		this._enemy.updateScore();
 
 		// After scores are calculated, we need to update the visuals for all cards on the board to reflect any changes.
 		this._allPlayingRowContainers.map((row) =>

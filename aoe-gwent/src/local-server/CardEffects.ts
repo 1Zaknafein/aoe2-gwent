@@ -1,9 +1,31 @@
-import { Card, PlayingRowContainer } from "../entities/card";
-import { Player } from "../entities/player/Player";
+import {
+	Card,
+	CardData,
+	HandContainer,
+	PlayingRowContainer,
+} from "../entities/card";
+import { WeatherRowContainer } from "../entities/card/WeatherRowContainer";
 
 export interface BattlefieldContext {
-	player: Player;
-	enemy: Player;
+	player: {
+		melee: PlayingRowContainer;
+		ranged: PlayingRowContainer;
+		siege: PlayingRowContainer;
+		weather: WeatherRowContainer;
+		hand: HandContainer;
+		deck: CardData[];
+		deckPosition: { x: number; y: number };
+	};
+
+	enemy: {
+		melee: PlayingRowContainer;
+		ranged: PlayingRowContainer;
+		siege: PlayingRowContainer;
+		hand: HandContainer;
+		deck: CardData[];
+		weather: WeatherRowContainer;
+		deckPosition: { x: number; y: number };
+	};
 }
 
 /**
@@ -28,8 +50,8 @@ export type SelfEffectFunction = (
  * Effect that modifies other cards (aura/passive effect)
  */
 export type AuraEffectFunction = (context: BattlefieldContext) => {
-	affectedRow: PlayingRowContainer;
-	effectValue: number;
+	row: PlayingRowContainer;
+	value: number;
 };
 
 /**
@@ -119,8 +141,8 @@ export const AuraEffects = {
 		description: "Decreases strength of all enemy melee units by 1.",
 		fn: (context: BattlefieldContext) => {
 			return {
-				affectedRow: context.enemy.melee,
-				effectValue: -1,
+				row: context.enemy.melee,
+				value: -1,
 			};
 		},
 	} as EffectMetadata<AuraEffectFunction>,
@@ -184,9 +206,6 @@ export const TriggerEffects = {
 		},
 	},
 
-	/**
-	 * Freeze: Decreases strength of all melee units to 1
-	 */
 	freezeEffect: {
 		id: "freeze_effect",
 		description: "Reduces strength of all melee units to 1.",
@@ -198,9 +217,6 @@ export const TriggerEffects = {
 		},
 	},
 
-	/**
-	 * Fog: Decreases strength of all ranged units to 1
-	 */
 	fogEffect: {
 		id: "fog_effect",
 		description: "Reduces strength of all ranged units to 1.",
@@ -212,9 +228,6 @@ export const TriggerEffects = {
 		},
 	},
 
-	/**
-	 * Rain: Decreases strength of all siege units to 1
-	 */
 	rainEffect: {
 		id: "rain_effect",
 		description: "Reduces strength of all siege units to 1.",
@@ -265,6 +278,7 @@ export const TriggerEffects = {
 			context.player.ranged.applyStrengthBoost(2);
 		},
 	},
+
 	bracerEffect: {
 		id: "bracer_effect",
 		description: "Increases strength of ranged units by 3.",
