@@ -2,10 +2,26 @@ import { Card, PlayingRowContainer } from "../../entities/card";
 import { BattlefieldContext } from "../../local-server/CardEffects";
 
 export class ScoreCalculator {
-	private readonly _rowBuffMap: Map<PlayingRowContainer, number> = new Map();
-	private readonly _cardScoreMap: Map<Card, number> = new Map();
+	private readonly _rowBuffMap: {
+		player: Map<PlayingRowContainer, number>;
+		enemy: Map<PlayingRowContainer, number>;
+	} = {
+		player: new Map(),
+		enemy: new Map(),
+	};
 
-	public calculateScore(context: BattlefieldContext): Map<Card, number> {
+	private readonly _cardScoreMap: {
+		player: Map<Card, number>;
+		enemy: Map<Card, number>;
+	} = {
+		player: new Map(),
+		enemy: new Map(),
+	};
+
+	public calculateScore(context: BattlefieldContext): {
+		player: Map<Card, number>;
+		enemy: Map<Card, number>;
+	} {
 		const playerRows = [
 			context.player.melee,
 			context.player.ranged,
@@ -17,17 +33,33 @@ export class ScoreCalculator {
 			context.enemy.siege,
 		];
 
-		this._rowBuffMap.clear();
-		this._cardScoreMap.clear();
+		this._rowBuffMap.player.clear();
+		this._cardScoreMap.player.clear();
+
+		this._rowBuffMap.enemy.clear();
+		this._cardScoreMap.enemy.clear();
 
 		// Reset scores to base values before applying any effects.
-		for (const row of [...playerRows, ...enemyRows]) {
+		for (const row of enemyRows) {
 			for (const card of row.cards) {
 				if (card.cardData.baseScore === undefined) {
 					throw new Error(`Card ${card.cardData.name} is missing baseScore!`);
 				}
 
-				this._cardScoreMap.set(
+				this._cardScoreMap.enemy.set(
+					card,
+					row.weatherEffectApplied ? 1 : card.cardData.baseScore
+				);
+			}
+		}
+
+		for (const row of playerRows) {
+			for (const card of row.cards) {
+				if (card.cardData.baseScore === undefined) {
+					throw new Error(`Card ${card.cardData.name} is missing baseScore!`);
+				}
+
+				this._cardScoreMap.player.set(
 					card,
 					row.weatherEffectApplied ? 1 : card.cardData.baseScore
 				);
@@ -35,32 +67,41 @@ export class ScoreCalculator {
 		}
 
 		// Calculate aura effects.
-		const effects = this.calculateAuraEffects(context);
+		const auraEffects = this.calculateAuraEffects(context);
+
+		auraEffects.enemy.forEach((effect) => {
+			const currentValue = this._rowBuffMap.enemy.get(effect.row) ?? 0;
+
+			this._rowBuffMap.enemy.set(effect.row, currentValue + effect.effectValue);
+		});
 
 		// Sum up buffs/debuffs from all aura effects for each row.
-		effects.forEach((effect) => {
-			const currentValue = this._rowBuffMap.get(effect.affectedRow) ?? 0;
+		auraEffects.player.forEach((effect) => {
+			const currentValue = this._rowBuffMap.player.get(effect.row) ?? 0;
 
-			this._rowBuffMap.set(
-				effect.affectedRow,
+			this._rowBuffMap.player.set(
+				effect.row,
 				currentValue + effect.effectValue
 			);
 		});
 
 		// Apply row buffs/debuffs from aura effects to the cards.
-		this._rowBuffMap.forEach((buffAmount, row) => {
+		this._rowBuffMap.player.forEach((buffAmount, row) => {
 			for (const card of row.cards) {
-				const oldScore = this._cardScoreMap.get(card)!;
+				const oldScore = this._cardScoreMap.player.get(card)!;
 				const newScore = oldScore + buffAmount;
 
-				this._cardScoreMap.set(card, Math.max(newScore, 1));
+				this._cardScoreMap.player.set(card, Math.max(newScore, 1));
 			}
 		});
 
 		// Apply card score for player rows.
 		for (const row of playerRows) {
 			for (const card of row.cards) {
-				this._cardScoreMap.set(card, this.calculateCardScore(card, context));
+				this._cardScoreMap.player.set(
+					card,
+					this.calculateCardScore(card, context)
+				);
 			}
 		}
 
@@ -73,20 +114,25 @@ export class ScoreCalculator {
 		// Apply card score for enemy rows.
 		for (const row of enemyRows) {
 			for (const card of row.cards) {
-				this._cardScoreMap.set(
+				this._cardScoreMap.enemy.set(
 					card,
 					this.calculateCardScore(card, swappedContext)
 				);
 			}
 		}
 
-		return new Map(this._cardScoreMap);
+		return {
+			player: this._cardScoreMap.player,
+			enemy: this._cardScoreMap.enemy,
+		};
 	}
 
 	private calculateCardScore(card: Card, context: BattlefieldContext): number {
 		const data = card.cardData;
 
-		let newScore = this._cardScoreMap.get(card)!;
+		let newScore =
+			this._cardScoreMap.player.get(card) ??
+			this._cardScoreMap.enemy.get(card)!;
 
 		if (data.selfEffect) {
 			newScore += data.selfEffect.fn(card, context);
@@ -95,12 +141,16 @@ export class ScoreCalculator {
 		return newScore;
 	}
 
-	private calculateAuraEffects(context: BattlefieldContext): {
-		affectedRow: PlayingRowContainer;
-		effectValue: number;
-	}[] {
-		let effects: {
-			affectedRow: PlayingRowContainer;
+	private calculateAuraEffects(
+		context: BattlefieldContext
+	): AuraEffectModifier {
+		let playerEffects: {
+			row: PlayingRowContainer;
+			effectValue: number;
+		}[] = [];
+
+		let enemyEffects: {
+			row: PlayingRowContainer;
 			effectValue: number;
 		}[] = [];
 
@@ -117,8 +167,8 @@ export class ScoreCalculator {
 
 		for (const row of playerRows) {
 			if (row.strengthBoost) {
-				effects.push({
-					affectedRow: row,
+				playerEffects.push({
+					row: row,
 					effectValue: row.strengthBoost,
 				});
 			}
@@ -127,9 +177,9 @@ export class ScoreCalculator {
 				const effect = card.cardData.auraEffect?.fn(context);
 
 				if (effect) {
-					effects.push({
-						affectedRow: effect.affectedRow,
-						effectValue: effect.effectValue,
+					playerEffects.push({
+						row: effect.row,
+						effectValue: effect.value,
 					});
 				}
 			}
@@ -142,8 +192,8 @@ export class ScoreCalculator {
 
 		for (const row of enemyRows) {
 			if (row.strengthBoost) {
-				effects.push({
-					affectedRow: row,
+				enemyEffects.push({
+					row: row,
 					effectValue: row.strengthBoost,
 				});
 			}
@@ -152,14 +202,29 @@ export class ScoreCalculator {
 				const effect = card.cardData.auraEffect?.fn(swappedContext);
 
 				if (effect) {
-					effects.push({
-						affectedRow: effect.affectedRow,
-						effectValue: effect.effectValue,
+					enemyEffects.push({
+						row: effect.row,
+						effectValue: effect.value,
 					});
 				}
 			}
 		}
 
-		return effects;
+		return {
+			player: playerEffects,
+			enemy: enemyEffects,
+		};
 	}
+}
+
+interface AuraEffectModifier {
+	player: {
+		row: PlayingRowContainer;
+		effectValue: number;
+	}[];
+
+	enemy: {
+		row: PlayingRowContainer;
+		effectValue: number;
+	}[];
 }

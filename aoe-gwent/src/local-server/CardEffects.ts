@@ -50,8 +50,8 @@ export type SelfEffectFunction = (
  * Effect that modifies other cards (aura/passive effect)
  */
 export type AuraEffectFunction = (context: BattlefieldContext) => {
-	affectedRow: PlayingRowContainer;
-	effectValue: number;
+	row: PlayingRowContainer;
+	value: number;
 };
 
 /**
@@ -141,8 +141,8 @@ export const AuraEffects = {
 		description: "Decreases strength of all enemy melee units by 1.",
 		fn: (context: BattlefieldContext) => {
 			return {
-				affectedRow: context.enemy.melee,
-				effectValue: -1,
+				row: context.enemy.melee,
+				value: -1,
 			};
 		},
 	} as EffectMetadata<AuraEffectFunction>,

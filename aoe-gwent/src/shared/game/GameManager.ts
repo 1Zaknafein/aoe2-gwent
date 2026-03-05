@@ -271,7 +271,13 @@ export class GameManager {
 		// Calculate score for all cards, as some cards can affect multiple cards' scores.
 		const updatedScores = this._scoreCalculator.calculateScore(context);
 
-		updatedScores.forEach((score, card) => card.setScore(score));
+		updatedScores.player.forEach((score, card) => {
+			card.setScore(score);
+		});
+
+		updatedScores.enemy.forEach((score, card) => {
+			card.setScore(score);
+		});
 
 		this._player.updateScore();
 		this._enemy.updateScore();
