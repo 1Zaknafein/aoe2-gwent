@@ -90,4 +90,4 @@ This project is for educational and entertainment purposes.
 
 ## Acknowledgments
 
-Inspired by Witcher 3: Wild Hunt Gwent minigame and Age of Empires II by World's Edge.
+Inspired by Witcher 3: Wild Hunt Gwent minigame and Age of Empires II by Forgotten Empires.
