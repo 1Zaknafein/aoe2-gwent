@@ -23,9 +23,9 @@ export class MessageDisplay extends PixiContainer {
 		height: 300,
 		padding: 100,
 		backgroundColor: "#000000",
-		textColor: "#ffffff",
+		textColor: "#e8d4a0",
 		fontSize: 58,
-		fontFamily: "Arial",
+		fontFamily: "Cinzel, serif",
 	};
 
 	constructor(options: MessageDisplayOptions) {
@@ -95,16 +95,22 @@ export class MessageDisplay extends PixiContainer {
 	private createBackground(): void {
 		const { width, height, backgroundColor } = this._options;
 
-		const gradient = new FillGradient(0, 0, width, 0);
 		const fadeColor = backgroundColor + "00";
 
-		gradient.addColorStop(0, fadeColor);
-		gradient.addColorStop(0.1, backgroundColor);
-		gradient.addColorStop(0.9, backgroundColor);
-		gradient.addColorStop(1, fadeColor);
+		const gradient = new FillGradient({
+			type: "linear",
+			start: { x: 0, y: 0 },
+			end: { x: 1, y: 0 },
+			colorStops: [
+				{ offset: 0, color: fadeColor },
+				{ offset: 0.15, color: backgroundColor },
+				{ offset: 0.85, color: backgroundColor },
+				{ offset: 1, color: fadeColor },
+			],
+		});
 
 		this._background = new Graphics();
-		this._background.alpha = 1;
+		this._background.alpha = 0.9;
 		this._background.rect(0, 0, width, height).fill(gradient);
 
 		this.addChild(this._background);
@@ -119,10 +125,19 @@ export class MessageDisplay extends PixiContainer {
 			style: {
 				fontFamily: fontFamily,
 				fontSize: fontSize,
+				fontWeight: "600",
+				letterSpacing: 2,
 				fill: textColor,
+				align: "center",
 				wordWrap: true,
 				wordWrapWidth: width - padding * 2,
-				align: "center",
+				dropShadow: {
+					distance: 3,
+					blur: 4,
+					color: "black",
+					alpha: 0.6,
+					angle: 45,
+				},
 			},
 		});
 

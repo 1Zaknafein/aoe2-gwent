@@ -196,29 +196,27 @@ export class GameScene extends PixiContainer implements SceneInterface {
 		direction: "vertical" | "horizontal",
 		reversed: boolean
 	): Graphics {
-		const size = 100;
-		const gradient =
-			direction === "vertical"
-				? new FillGradient(0, 0, 1, size)
-				: new FillGradient(0, 0, size, 1);
-
 		const solidColor = "#1a1410";
 		const transparentColor = "#1a141000";
 
-		if (reversed) {
-			gradient.addColorStop(0, transparentColor);
-			gradient.addColorStop(1, solidColor);
-		} else {
-			gradient.addColorStop(0, solidColor);
-			gradient.addColorStop(1, transparentColor);
-		}
+		const colorStops = reversed
+			? [
+					{ offset: 0, color: transparentColor },
+					{ offset: 1, color: solidColor },
+				]
+			: [
+					{ offset: 0, color: solidColor },
+					{ offset: 1, color: transparentColor },
+				];
 
-		const graphics = new Graphics();
-		const width = direction === "vertical" ? 1 : size;
-		const height = direction === "vertical" ? size : 1;
-		graphics.rect(0, 0, width, height).fill(gradient);
+		const gradient = new FillGradient({
+			type: "linear",
+			start: { x: 0, y: 0 },
+			end: direction === "vertical" ? { x: 0, y: 1 } : { x: 1, y: 0 },
+			colorStops,
+		});
 
-		return graphics;
+		return new Graphics().rect(0, 0, 1, 1).fill(gradient);
 	}
 
 	resize(screenWidth: number, screenHeight: number): void {
