@@ -1,9 +1,8 @@
-import { Container, Sprite, Text, Texture } from "pixi.js";
+import { Container, Sprite, Text } from "pixi.js";
 import gsap from "gsap";
 import { setFitWidth } from "../../ui/components/CommonComponents";
 import { CardData, CardType } from "../../local-server/CardDatabase";
 import { Card } from "./Card";
-import { FontStyles } from "../../shared/FontStyles";
 
 export class CardPreview extends Container {
 	public card: Card;
@@ -15,8 +14,6 @@ export class CardPreview extends Container {
 
 	private _activeTween: GSAPAnimation | null = null;
 
-	private readonly _rowTypeIcons: Map<CardType, Texture>;
-
 	constructor() {
 		super();
 
@@ -26,13 +23,6 @@ export class CardPreview extends Container {
 			score: 1,
 			type: CardType.MELEE,
 		};
-
-		this._rowTypeIcons = new Map<CardType, Texture>([
-			[CardType.MELEE, Texture.from("icon_melee")],
-			[CardType.RANGED, Texture.from("icon_ranged")],
-			[CardType.SIEGE, Texture.from("icon_siege")],
-			[CardType.WEATHER, Texture.from("icon_weather")],
-		]);
 
 		this.card = new Card(cardData);
     this.card.scale.set(2);

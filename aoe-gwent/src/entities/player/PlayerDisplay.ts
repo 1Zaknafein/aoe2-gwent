@@ -91,7 +91,7 @@ export class PlayerDisplay extends PixiContainer {
 		this.totalScoreText.position.set(bgWidth / 2, 115);
 
 		this.handLabel.position.set(bgWidth - 60, 75);
-		this.handCountText.position.set(this.handLabel.x, 110);
+		this.handCountText.position.set(this.handLabel.x, 115);
 
 		if (this.passButton) {
 			this.passButton.position.set(0, bgHeight + 20);
