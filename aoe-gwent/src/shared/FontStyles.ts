@@ -3,7 +3,7 @@ import { TextStyle } from "pixi.js";
 export namespace FontStyles {
 	export const scoreTextStyle: Partial<TextStyle> = {
 		fontFamily: "Cinzel, serif",
-		fontSize: 48,
+		fontSize: 72,
 		align: "center",
 		fontWeight: "bold",
 		fill: "#d1c072",

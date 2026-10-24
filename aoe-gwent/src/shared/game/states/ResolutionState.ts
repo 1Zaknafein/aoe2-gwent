@@ -10,9 +10,9 @@ export class ResolutionState extends State {
 
 		this.darkOverlay.visible = true;
 
-		gsap.to(this.darkOverlay, {
+		await gsap.to(this.darkOverlay, {
 			alpha: 0.3,
-			duration: 0.5,
+			duration: 0.25,
 		});
 
 		await this.gameResolutionDisplay.show();

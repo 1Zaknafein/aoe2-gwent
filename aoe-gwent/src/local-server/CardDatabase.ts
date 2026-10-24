@@ -147,7 +147,7 @@ export class CardDatabase {
 		},
 		{
 			id: 10,
-			name: "Two Handed Swordsman",
+			name: "2H Swordsman",
 			score: 5,
 			type: CardType.MELEE,
 			tags: ["infantry"],

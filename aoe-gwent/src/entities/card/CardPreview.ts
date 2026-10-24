@@ -9,9 +9,6 @@ export class CardPreview extends Container {
 	public card: Card;
 
 	private readonly _title: Text;
-	private readonly _score: Text;
-	private readonly _icon: Sprite;
-
 	private readonly _border: Sprite;
 	private readonly _descriptionText: Text;
 	private readonly _descriptionBg: Sprite;
@@ -38,17 +35,17 @@ export class CardPreview extends Container {
 		]);
 
 		this.card = new Card(cardData);
-		this.card.scale.set(2);
-		this.card.hideDetails();
+    this.card.scale.set(2);
+    this.card.hideDetails();
+		this.card.y = -29
 
 		this._border = Sprite.from("card_preview_border");
 		this._border.anchor.set(0.5);
-		this._border.scale.set(1.2, 1.25);
-		this._border.y = 15;
+		this._border.scale.set(1, 1.1);
 
 		this._title = new Text();
 		this._title.anchor.set(0.5);
-		this._title.y = 253;
+		this._title.y = 235;
 		this._title.style = {
 			fontFamily: "Cinzel, serif",
 			fontSize: 30,
@@ -56,22 +53,7 @@ export class CardPreview extends Container {
 			fill: "#290e00",
 		};
 
-		setFitWidth(this._title, 230, 30);
-
-		this._icon = new Sprite(this._rowTypeIcons.get(CardType.MELEE));
-		this._icon.anchor.set(0.5);
-		this._icon.scale.set(0.7);
-		this._icon.tint = "#ffcc81";
-
-		this._icon.x = 150;
-		this._icon.y = 265;
-
-		this._score = new Text();
-		this._score.style = FontStyles.scoreTextStyle;
-
-		this._score.anchor.set(0.5);
-		this._score.y = 263;
-		this._score.x = -150;
+		setFitWidth(this._title, 250, 30);
 
 		this._descriptionBg = Sprite.from("paper");
 		this._descriptionBg.scale.set(1.15, 0.5);
@@ -89,16 +71,14 @@ export class CardPreview extends Container {
 		};
 
 		this._descriptionText.anchor.set(0.5, 0);
-		this._descriptionText.y = 330;
+		this._descriptionText.y = 310;
 
 		this.addChild(
 			this._descriptionBg,
 			this._descriptionText,
-			this.card,
 			this._border,
+			this.card,
 			this._title,
-			this._icon,
-			this._score
 		);
 
 		this.visible = false;
@@ -130,50 +110,45 @@ export class CardPreview extends Container {
 	private updateCard(cardData: CardData): void {
 		this.card.updateCardData(cardData);
 
-		this.card.width = 309;
-		this.card.height = 444;
+		this.card.width = 305;
+    this.card.height = 448;
 
 		this.updateDescription();
 	}
 
 	private updateDescription(): void {
-		const name = this.card.cardData.name;
-		const texture = this._rowTypeIcons.get(this.card.cardData.type);
-
-		this._title.text = name;
-		this._title.style.fontSize = 30;
-		setFitWidth(this._title, 230, 30);
-
-		if (texture && this._icon.texture !== texture) {
-			this._icon.texture = texture;
-		} else if (!texture) {
-			this._icon.texture = Texture.EMPTY;
-		}
-
-		if (this.card.cardData.baseScore! > 0) {
-			this._score.text = this.card.cardData.baseScore!.toString();
-		} else {
-			this._score.text = "";
-		}
-
 		const cardData = this.card.cardData;
 
-		// There is only one effect per card, but we check all 3 possible effect types just in case for future extensibility.
-		const effectDescriptions = [];
+    this._title.text = cardData.name;
+    this._title.style.fontSize = 30;
 
+		setFitWidth(this._title, 250, 30);
+
+
+    const cardDescription: string[] = [];
+
+    // Need to log out card strength and type;
+
+    if (cardData.baseScore) {
+      cardDescription.push(`Strength: ${cardData.baseScore}`);
+    }
+
+    cardDescription.push(`Type: ${cardData.type}`);
+
+		// There is only one effect per card, but we check all 3 possible effect types just in case for future extensibility.
 		if (cardData.selfEffect) {
-			effectDescriptions.push(cardData.selfEffect.description);
+			cardDescription.push(cardData.selfEffect.description);
 		}
 
 		if (cardData.auraEffect) {
-			effectDescriptions.push(cardData.auraEffect.description);
+			cardDescription.push(cardData.auraEffect.description);
 		}
 
 		if (cardData.onPlayEffect) {
-			effectDescriptions.push(cardData.onPlayEffect.description);
+			cardDescription.push(cardData.onPlayEffect.description);
 		}
 
-		if (effectDescriptions.length === 0) {
+		if (cardDescription.length === 0) {
 			this._descriptionBg.visible = false;
 			this._descriptionText.visible = false;
 		} else {
@@ -181,6 +156,6 @@ export class CardPreview extends Container {
 			this._descriptionText.visible = true;
 		}
 
-		this._descriptionText.text = effectDescriptions.join("\n");
+		this._descriptionText.text = cardDescription.join("\n");
 	}
 }

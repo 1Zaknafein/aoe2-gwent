@@ -1,6 +1,6 @@
-import { PixiContainer, PixiGraphics, PixiText } from "../../plugins/engine";
 import { gsap } from "gsap";
 import { FillGradient, Graphics } from "pixi.js";
+import { PixiContainer, PixiGraphics, PixiText } from "../../plugins/engine";
 
 export interface MessageDisplayOptions {
 	width?: number;

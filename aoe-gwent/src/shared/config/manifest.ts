@@ -34,8 +34,8 @@ export const options: LoaderOptions = {
 					militia: "./sprites/cards/card_faces/militia.png",
 					pikeman: "./sprites/cards/card_faces/pikeman.png",
 					berserker: "./sprites/cards/card_faces/berserker.png",
-					two_handed_swordsman:
-						"./sprites/cards/card_faces/two_handed_swordsman.png",
+					"2h_swordsman":
+						"./sprites/cards/card_faces/2h_swordsman.png",
 					karambit_warrior: "./sprites/cards/card_faces/karambit_warrior.png",
 					obuch: "./sprites/cards/card_faces/obuch.png",
 					konnik: "./sprites/cards/card_faces/konnik.png",
